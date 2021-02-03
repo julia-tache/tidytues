@@ -1,0 +1,129 @@
+---
+title: 'Tidy Tuesday - Week #6 2021'
+author: "Julia Tache"
+date: "2/2/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(ggplot2)
+library(hrbrthemes)
+```
+
+The data this week are on college enrollment in HBCUs and high school completion and bachelor's degree attainment among persons age 25 and over by race/ethnicity & sex between 1910-2016. I was curious to see the differences in male and female enrollment at HBCUs as well as educational attainment across all races in the data. 
+
+```{r, Load Data}
+tuesdata <- tidytuesdayR::tt_load(2021, week = 6)
+```
+
+```{r}
+hbcu_all <- tuesdata$hbcu_all
+female_bach <- tuesdata$female_bach_students
+```
+
+```{r}
+ggplot(female_bach, aes(x=Total, y=`Total, percent of all persons age 25 and over`)) +
+  geom_line(color="#69b3a2", size=1, alpha=0.9) +
+  xlab("Year") + 
+  ylab("Total Percent of Female Population") + 
+  theme_ipsum() +
+  ggtitle("Female Bachelor Acquirement") +
+  annotate(geom="text", x=1972, y=14,  
+             label="1972: Year Title \n IX Passes") +
+  annotate(geom="point", x=1972, y=9, size=10, shape=21, fill="transparent") +
+  geom_hline(yintercept = 8.2) + 
+  geom_text(y=1972, label="Scatter plot")
+```
+
+The percentage of women with a Bachelor's increases overtime, especially after 1972 when Title IX is passed, a landmark educational amendement in equal rights for students. 
+
+```{r}
+ggplot(hbcu_all, aes(x=Year, y=Females)) +
+  geom_line( color="#69b3a2", size=1, alpha=0.9) +
+  ylab("Number of Students") + 
+  theme_ipsum() +
+  ggtitle("Female HBCU enrollment")
+```
+
+Female enrollment in HBCUs has been increasing overall with a rather sharp dip since 2010. 
+
+```{r}
+ggplot(hbcu_all, aes(x=Year, y=Males)) +
+  geom_line(color="maroon", size=1, alpha=0.9) +
+  ylab("Number of Students") + 
+  theme_ipsum() +
+  ggtitle("Male HBCU enrollment")
+```
+
+Male enrollment in HBCUs follows a similar trajectory.  
+
+```{r}
+hbcu_all %>% 
+  select(Year, Males, Females) %>% 
+  pivot_longer(cols = Males:Females) %>% 
+  ggplot(aes(x = Year, y = value, color = name)) +
+  geom_line(size=1, alpha=0.9) +
+  scale_x_continuous(breaks = seq(1980, 2020, by = 4)) + 
+  labs(color = "Sex") + 
+  ylab("Total Number of Students") + 
+  theme_ipsum() +
+  ggtitle("Male vs. Female HBCU Enrollment") + 
+  scale_color_manual(values=c("#69b3a2", "maroon"))
+```
+
+Putting the two graphs together, we see that women outnumber men in HBCUs. 
+
+Curious about the dips in enrollment, especially the most recent one, I found an article by Delece Smith-Barrow about how HBCUs are struggling due to "rising college costs, the student loan crisis and federal budget cuts": https://hechingerreport.org/many-hbcus-are-teetering-between-surviving-and-thriving/. During times of financial hardship and lack of investment, one could expect enrollment to decline. This highlights the importance of donations to support these historic and empowering educational centers and communities: https://thehbcufoundation.org/donate/ 
+
+```{r}
+hbcu_all <- hbcu_all %>%
+  mutate(pct_change_fem = (Females/lead(Females) - 1) * 100)
+
+ggplot(hbcu_all, aes(Year, pct_change_fem)) +
+  geom_ribbon(aes(ymax = pct_change_fem, ymin = 0), fill = "#69b3a2", alpha = 0.5) +
+  geom_path() + 
+  ylab("%") + 
+  theme_ipsum() +
+  ggtitle("Percent change in Female HBCU Enrollment")
+```
+
+At the lowest point, female HBCU enrollment went down by almost 10% in the 1980s, but quickly had a revival. 
+
+```{r}
+female_bach %>% 
+  select(Total, White1, Black1) %>% 
+  pivot_longer(White1:Black1) %>% 
+  ggplot(aes(x = Total, y = value, color = name)) +
+  geom_line(size=0.5, alpha=0.9) +
+  scale_x_continuous(breaks = seq(1910, 2018, by = 4)) +
+  labs(color = "Race") + 
+  xlab("Year") + 
+  ylab("Total Percent of Female Population") + 
+  theme_ipsum() +
+  ggtitle("Female Bachelor's Degree Attainment by Race") + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+HBCUs provide rich history and culture, community, and educational opportunities for black students. They are a conduit for disenfranchised populations to be surrounded by supportive peers and mentors and to succeed academically and beyond. 
+
+For women, the gap between white students and black students obtaining a Bachelor's degree has widened over the past century but is remaining steady. Closing that gap is crucial, and HBCUs, especially historically women's colleges, provide learning environments focused on leadership and rooted in feminist ideology. The lack of financial and structural support to HBCUs is one of a myriad of factors that may lead to this disparity. 
+
+```{r}
+female_bach %>% 
+  rename(Year = Total) %>% 
+  select(!contains("Standard")) %>% 
+  select(!contains("Total")) %>% 
+  mutate(across(White1:last_col(), as.double)) %>% 
+  pivot_longer(cols = 2:last_col(), names_to = "group", values_to = "percentage") %>% 
+  ggplot(aes(x = Year, y = percentage, color = group)) +
+  geom_line(size=0.5, alpha=0.9) +
+  xlim(2003, 2016) + 
+  labs(color = "Race") + 
+  ylab("Total Percent of Female Population") + 
+  theme_ipsum() +
+  ggtitle("Female Bachelor's Degree Attainment by Race") 
+```
+
+This graph shows that, overall, rates for women with college degrees are increasing for all racial groups, but it also shows the large differences between groups. This graph tells a million and one stories about the socioeconomic, situational, and structural trends that lead to inequities in our educational system. 
