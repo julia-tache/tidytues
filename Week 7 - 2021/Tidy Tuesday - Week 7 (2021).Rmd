@@ -1,0 +1,153 @@
+---
+title: "Tidy Tuesday - Week 7 (2021)"
+author: "Julia Tache"
+date: "2/9/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+This week's Tidy Tuesday features data from the Urban Institute and the US Census. The datasets featured cover wealth, income, and debt over time and by race. In my visualizations, I wanted to look at how wealth inequality, debt, and other factors have changed over time by race and other related socioeconomic variables. 
+
+There are notable, observable trends, such as the income distribution of the highest income quantile has increased since the 1970s while the distribution for the lowest quantile has decreased at a similar pace, average earnings for black men and hispanic women are the lowest, white homeowners vastly outnumber black and hispanic homeowners, the student debt burden is sharply increasing especially so for black students, and most high-income earners in the data are either white or Asian. The data reveal the long legacy of financial disenfranchisement of African-Americans and Latinx folks. While the data show that Asians are amongst top-earners, wealth is by far most concentrated in white populations, and inequality between economic levels is increasing. 
+
+```{r load data}
+library(tidyverse)
+tuesdata <- tidytuesdayR::tt_load(2021, week = 7)
+```
+```{r create plots}
+library(ggplot2)
+library(gganimate)
+
+income_aggregate <- tuesdata$income_aggregate %>%
+  mutate(income_quintile = fct_relevel(income_quintile, 
+                                       "Lowest", "Second", "Third", "Fourth", 
+                                       "Highest", "Top 5%")) %>%
+  mutate(income_share = income_share / 100) # turn percent into decimal 
+
+boxplot <- ggplot(income_aggregate, aes(income_quintile, income_share)) +
+  geom_boxplot() + 
+  ggtitle("Total Aggregate Income Share vs. Income Quintile") +
+  xlab("Income Quintile") + 
+  ylab("% Share of Income") + 
+  theme_light()
+
+lowest <- income_aggregate %>%
+  filter(income_quintile == "Lowest")
+
+scatter_low <- ggplot(lowest, aes(year, income_share)) + 
+  geom_point(aes(color = race, size = number)) + 
+  ggtitle("Change in % Share of Income for Lowest Income Quintile") +
+  xlab("Year") + 
+  ylab("% Share of Income") +   
+  labs(color = "Race", size = "Number of Households") + 
+  theme_light()
+
+highest <- income_aggregate %>%
+  filter(income_quintile == "Highest")
+
+scatter_high <- ggplot(highest, aes(year, income_share)) + 
+  geom_point(aes(color = race, size = number)) + 
+  ggtitle("Change in % Share of Income for Highest Income Quintile") +
+  xlab("Year") + 
+  ylab("% Share of Income") +   
+  labs(color = "Race", size = "Number of Households") + 
+  theme_light()
+```
+
+```{r display plots}
+boxplot 
+scatter_low
+scatter_high 
+
+anim1 <- scatter_low + transition_states(year,
+                              transition_length = 2,
+                              state_length = 1)
+
+anim2 <- scatter_high + transition_states(year,
+                              transition_length = 2,
+                              state_length = 1)
+
+anim1
+anim2
+```
+```{r bargraphs}
+ggplot(tuesdata$lifetime_earn, aes(race, lifetime_earn, fill = gender)) + 
+  geom_bar(stat="identity", position=position_dodge()) + 
+  ggtitle("Average Lifetime Earning by Race/Sex") +  
+  xlab("Race") + 
+  ylab("Earnings") + 
+  labs(fill = "Sex") + 
+  theme_light()
+
+tuesdata$race_wealth %>%
+  filter(year > 1985) %>%
+  ggplot(aes(year, wealth_family, fill = race)) + 
+    geom_bar(stat="identity", position=position_dodge()) + 
+    ggtitle("Family Wealth by Race/Year from 1985 - 2016") +  
+    xlab("Year") + 
+    ylab("Wealth (in 2016 dollars)") + 
+    labs(fill = "Race") + 
+    theme_light()
+```
+
+```{r linegraph}
+ggplot(tuesdata$home_owner, aes(year, home_owner_pct)) + 
+  facet_wrap(~race) + 
+  geom_line() + 
+  ggtitle("Change in % Home Ownership by Race") +
+  xlab("Year") + 
+  ylab("% Home Ownership") + 
+  theme_light()
+
+ggplot(tuesdata$student_debt, aes(year, loan_debt)) + 
+  facet_wrap(~race) + 
+  geom_line() + 
+  ggtitle("Change in Student Loan Debt by Race (in 2016 dollars)") +
+  xlab("Year") + 
+  ylab("Debt") +  
+  theme_light()
+```
+
+```{r income distribution in 2016}
+id_2016 <- tuesdata$income_distribution %>%
+  filter(year == 2016) %>%
+  mutate(income_bracket = fct_relevel(income_bracket, 
+                                      "Under $15,000", 
+                                      "$15,000 to $24,999", 
+                                      "$25,000 to $34,999",
+                                      "$35,000 to $49,999", 
+                                      "$50,000 to $74,999", 
+                                      "$75,000 to $99,999",
+                                      "$100,000 to $149,999",
+                                      "$150,000 to $199,999",
+                                      "$200,000 and over"))
+
+ggplot(id_2016, aes(income_distribution, income_median)) + 
+  facet_wrap(~income_bracket) + 
+  geom_point(aes(color = race, size = number)) + 
+  ggtitle("Median Income in 2016") +
+  xlab("Income Distribution") + 
+  ylab("Median Income") + 
+  labs(fill = "Race", size = "Number of Households") + 
+  theme_light()
+```
+
+```{r}
+id_2016 <- id_2016 %>%
+  filter(race == "Asian Alone" | race == "Black Alone" | race == "Hispanic (Any Race)" | race =="White Alone, Not Hispanic") %>%
+  mutate(weighted_dist = number * (income_distribution/100))
+
+ggplot(id_2016, aes(income_bracket, weighted_dist, fill = race)) + 
+  geom_bar(stat="identity", position=position_dodge()) + 
+  ggtitle("Race by Income Bracket") +  
+  xlab("Income Bracket") + 
+  ylab("Distribution of Households") + 
+  labs(fill = "Race") + 
+  theme_light() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
+```
+
