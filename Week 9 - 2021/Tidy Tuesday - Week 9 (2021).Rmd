@@ -1,0 +1,101 @@
+---
+title: "Tidy Tuesday - Week 9 (2021)"
+author: "Julia Tache"
+date: "2/23/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+## Employed Status 
+
+This week's data are on employment and are sourced from the Bureau of Labor Statistics. I was interested this week in practicing my skills in plotly to create interactive bubble charts and investigating racial and sex wage gaps.  
+
+The data show interesting trends, most notably that income inequity gaps seem to have been increasing overall and that the largest income gaps are between Asian men and women & White and Black men. 
+
+```{r load data}
+library(tidyverse)
+tuesdata <- tidytuesdayR::tt_load('2021-02-23')
+```
+
+```{r aggregate data I}
+library(reshape2)
+
+earn <- tuesdata$earn
+employed <- tuesdata$employed
+
+agg <- earn %>%
+  group_by(year, sex) %>%
+  summarize(mean_yearly_earn = (mean(median_weekly_earn)*52)) %>% # approx. yearly income 
+  filter(sex != "Both Sexes")
+
+# reshape the data 
+agg <- dcast(agg, year ~ sex)
+
+# calculate gap between white and black earners 
+agg <- agg %>%
+  mutate(gap = (Men - Women)/100) 
+# dollar amount in hundreds helps keep the graphs neat 
+
+agg$Men <- agg$Men / 100
+agg$Women <- agg$Women / 100
+```
+
+```{r Figure I}
+library(plotly)
+
+fig <- plot_ly(agg, x = ~Women, y = ~Men, text = ~year, type = 'scatter', mode = 'markers', marker = list(size = ~gap, color = ~gap, opacity = 0.5, colorbar = list(title = 'Income Gap'), colorscale='Viridis'))
+
+fig %>% layout(title = 'Yearly Earning Gaps between All Men and Women (in hundreds of dollars)')
+```
+
+```{r aggregate data II}
+agg2 <- earn %>%
+  group_by(year, race, sex) %>%
+  summarize(mean_yearly_earn = (mean(median_weekly_earn)*52)) %>%
+  filter(sex != "Both Sexes") %>%
+  filter(race != "All Races")
+
+agg2$mean_yearly_earn <- agg2$mean_yearly_earn / 1000
+```
+
+```{r Figure II}
+plot_ly(agg2, x = ~year, y = ~mean_yearly_earn, text = ~sex, type = 'scatter', mode = 'markers', color = ~race, marker = list(size = ~mean_yearly_earn, opacity = 0.5)) %>% layout(title = 'Average Yearly Earnings by Race and Sex (in thousands of dollars)')
+```
+
+```{r Adjust data for graphing}
+agg2$mean_yearly_earn <- agg2$mean_yearly_earn * 10
+agg2 <- dcast(agg2, year ~ race + sex)
+
+agg2 <- agg2 %>% 
+  mutate(asian_gap = Asian_Men - Asian_Women) %>%
+  mutate(white_gap = White_Men - White_Women) %>%
+  mutate(black_gap = `Black or African American_Men` - `Black or African American_Women`) %>%
+  mutate(bw_men_gap = White_Men - `Black or African American_Men`) %>%
+  mutate(bw_women_gap = White_Women - `Black or African American_Women`) 
+```
+
+```{r Figure III}
+plot_ly(agg2, x = ~Asian_Women, y = ~Asian_Men, text = ~year, type = 'scatter', mode = 'markers', marker = list(size = ~asian_gap, opacity = 0.5, color = ~asian_gap, colorbar = list(title = 'Income Gap'), colorscale='Viridis')) %>% layout(title = 'Yearly Earning Gaps between Asian Men and Women (in hundreds of dollars)')
+```
+```{r Figure IV}
+plot_ly(agg2, x = ~White_Women, y = ~White_Men, text = ~year, type = 'scatter', mode = 'markers', marker = list(size = ~white_gap, opacity = 0.5, color = ~white_gap, colorbar = list(title = 'Income Gap'), colorscale='Viridis')) %>% layout(title = 'Yearly Earning Gaps between White Men and Women (in hundreds of dollars)')
+```
+```{r Figure V}
+plot_ly(agg2, x = ~`Black or African American_Men`, y = ~`Black or African American_Women`, text = ~year, type = 'scatter', mode = 'markers', marker = list(size = ~black_gap, opacity = 0.5, color = ~black_gap, colorbar = list(title = 'Income Gap'), colorscale='Viridis')) %>% layout(title = 'Yearly Earning Gaps between Black Men and Women (in hundreds of dollars)')
+```
+
+
+```{r Figure VI}
+plot_ly(agg2, x = ~`White_Men`, y = ~`Black or African American_Men`, text = ~year, type = 'scatter', mode = 'markers', marker = list(size = ~bw_men_gap, opacity = 0.5, color = ~bw_men_gap, colorbar = list(title = 'Income Gap'), colorscale='Viridis')) %>% layout(title = 'Yearly Earning Gaps between Black and White Men (in hundreds of dollars)')
+```
+
+```{r Figure VII}
+plot_ly(agg2, x = ~`White_Women`, y = ~`Black or African American_Women`, text = ~year, type = 'scatter', mode = 'markers', marker = list(size = ~bw_women_gap, opacity = 0.5, color = ~bw_women_gap, colorbar = list(title = 'Income Gap'), colorscale='Viridis')) %>% layout(title = 'Yearly Earning Gaps between Black and White Women (in hundreds of dollars)')
+```
+
+
