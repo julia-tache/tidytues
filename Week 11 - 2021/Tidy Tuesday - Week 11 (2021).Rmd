@@ -1,0 +1,160 @@
+---
+title: "Tidy Tuesday - Week 11 (2021)"
+author: "Julia Tache"
+date: "3/9/2021"
+header-includes:
+   - \usepackage{dcolumn}
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default 
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+## Bechdel Test 
+
+Happy Women's History Month! 
+
+The Bechdel Test for film is defined as followed: "there are at least two named women in the picture, they have a conversation with each other at some point, and that conversation isn’t about a male character." One of the big questions that arises in debates about female representation in film is whether or not movies about women will be as successful as those about men? Let's put the data to the test- the Bechdel test: 
+
+```{r load data}
+library(tidyverse)
+
+tuesdata <- tidytuesdayR::tt_load('2021-03-09')
+movies <- tuesdata$movies
+head(movies)
+```
+
+Having financial backing for a film is very important: capital, resources, and investment into the film can all aid in its eventual release, promotion, and reception. 
+
+(Side note: Wes Anderson films probably won't pass the Bechdel test, but at the very least the palettes are very pretty and fit with today's cinematic theme.)
+
+```{r}
+library("wesanderson")
+
+movies$decade <- str_replace(movies$year, "\\d{1}$", "0s") 
+
+totals <- movies %>%
+  group_by(decade, binary) %>%
+  summarize(total = sum(budget_2013))
+
+totals$total <- formatC(totals$total, format = "e", digits = 2)
+
+ggplot(totals, aes(x = decade, y = total, group = binary)) + 
+  geom_bar(aes(fill = binary), stat = "identity", position = "dodge") + 
+  geom_text(aes(decade, total, label = total, fill = NULL), data = totals, size = 2.5, position = position_dodge(1)) + 
+  xlab("Decade") + 
+  ylab("Budget (in 2013 dollars)") + 
+  labs(title = "Film Budgets over the decades (1970 - 2013)", 
+       subtitle = "Films that pass the Bechdel test hit budget lows in the 80s and 2000s",
+       fill = "Bechdel Test?") + 
+  scale_fill_manual(values = wes_palette("Moonrise1", n = 2)) + 
+  theme_light() + 
+  theme(axis.text.y = element_blank())
+```
+
+Interestingly, despite lower budgets, films that passed the test had higher gross domestic profits in those same decades (80s and 90s). 
+
+```{r}
+movies$domgross_2013 <- as.numeric(movies$domgross_2013)
+
+totals <- movies %>%
+  group_by(decade, binary) %>%
+  summarize(total = sum(domgross_2013, na.rm = TRUE))
+
+totals$total <- formatC(totals$total, format = "e", digits = 2)
+
+ggplot(totals, aes(x = decade, y = total, group = binary)) + 
+  geom_bar(aes(fill = binary), stat = "identity", position = "dodge") + 
+  geom_text(aes(decade, total, label = total, fill = NULL), data = totals, size = 2.5, position = position_dodge(1))  + 
+  xlab("Decade") + 
+  ylab("Gross Domestic Profit (in 2013 dollars)") + 
+  labs(title = "Gross Domestic Profit over the decades (1970 - 2013)", 
+       subtitle = "Looks like films that pass the test did pretty well in the 70s and 80s, \nbut their success dropped in the 90s",
+       fill = "Bechdel Test?") + 
+  scale_fill_manual(values = wes_palette("Moonrise2", n = 2)) + 
+  theme_light() + 
+  theme(axis.text.y = element_blank())
+```
+
+User ratings can tell us both how a movie is perceived and, for older pictures, the film's legacy as new people watch older movies and rate them on new platforms. 
+
+```{r}
+totals <- movies %>%
+  group_by(decade, binary) %>%
+  summarize(total = mean(imdb_rating, na.rm = TRUE))
+
+totals$total <- round(totals$total, digits = 2)
+
+ggplot(totals, aes(x = decade, y = total, group = binary)) + 
+  geom_bar(aes(fill = binary), stat = "identity", position = "dodge") + 
+  geom_text(aes(decade, total, label = total, fill = NULL), data = totals, size = 2.5, position = position_dodge(1)) + 
+  xlab("Decade") + 
+  ylab("Average IMDB Rating") + 
+  labs(title = "Film Ratings (1970 - 2013)", 
+       subtitle = "It LOOKS like movies that pass the Bechdel test are more poorly rated, \nbut looks can be deceiving!",
+       fill = "Bechdel Test?") + 
+  scale_fill_manual(values = wes_palette("Moonrise3", n = 2)) + 
+  theme_light() + 
+  theme(axis.text.y = element_blank())
+```
+
+```{r}
+totals <- movies %>%
+  group_by(decade, binary) %>%
+  summarize(weighted_imdb_rating = weighted.mean(imdb_rating, imdb_votes, na.rm = TRUE))
+
+totals$weighted_imdb_rating <- round(totals$weighted_imdb_rating, digits = 2)
+
+ggplot(totals, aes(x = decade, y = weighted_imdb_rating, group = binary)) + 
+  geom_bar(aes(fill = binary), stat = "identity", position = "dodge") + 
+  geom_text(aes(decade, weighted_imdb_rating, label = weighted_imdb_rating, fill = NULL), data = totals, size = 2.5, position = position_dodge(1)) + 
+  xlab("Decade") + 
+  ylab("Average IMDB Rating") + 
+  labs(title = "Film Ratings (1970 - 2013)", 
+       subtitle = "With the weighted mean, we see that scores do not vary that much \nbetween the two categories of movies",
+       fill = "Bechdel Test?") + 
+  scale_fill_manual(values = wes_palette("GrandBudapest1", n = 2)) + 
+  theme_light() + 
+  theme(axis.text.y = element_blank())
+```
+
+```{r}
+library(plotly)
+
+movies <- separate_rows(movies , genre, sep = ",")
+
+movies$domgross_2013 <- as.numeric(movies$domgross_2013)
+
+movies <- movies %>%
+  filter(!is.na(rated)) %>%
+  filter(rated != "N/A")
+
+movies$rated <- factor(movies$rated, 
+                 levels=c("G", "PG", "TV-PG", "PG-13", "TV-14", "R", "NC-17", "X", "Unrated", "Not Rated"))
+
+pal <- wes_palette("Zissou1", 100, type = "continuous")
+
+p <- ggplot(movies, aes(x = rated, 
+                        y = clean_test, 
+                        fill = domgross_2013),
+            text = domgross_2013) + 
+  geom_tile() + 
+  scale_fill_gradientn(colours = pal) + 
+  scale_x_discrete(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) + 
+  labs(title = "Bechdel Test Results vs. Rating", 
+       fill = "Domestic Gross") + 
+  theme_light() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank()) 
+
+ggplotly(p, tooltip = "text")
+```
+
+It's interesting to note that the highest grossing films tend to be those targeted to older kids (PG, TV-PG, and PG-13 rated films). The highest grossing of this subsection also tend to be "dubious" with regards to their test results. This is troubling because it shows that lack of representation extends beyond mainstream adult films and into children's content. Creators of media for younger audiences should be mindful of the portrayals and representations of marginalized groups in their films because of the impressionable nature of these demographics. Having diverse writers, directors, actors, and producers means a wide-range of ideas will be shared and more film consumers will be able to see themselves through the stories of people like them. This can be extremely empowering for not only those in marginalized groups, but for everyone to see positive or at the very least varied depictions of women, people of color, and queer folx in media. 
