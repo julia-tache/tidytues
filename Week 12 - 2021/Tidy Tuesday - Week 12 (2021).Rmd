@@ -1,0 +1,205 @@
+---
+title: "Week 12 - Games"
+author: "Julia Tache"
+date: "3/16/2021"
+header-includes:
+   - \usepackage{dcolumn}
+output:
+  pdf_document: default 
+  html_document:
+    df_print: paged
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+For this week, using the video games dataset, I decided to try my hand at moon charts. I looked at the games with the top 10 highest and bottom 10 lowest share of the average number of players over the highest number of total players in December, 2020. The trickiest part of creating the moon charts was reshaping the data to make sure that the final product looked presentable.   
+
+I think I will return to this dataset sometime in the future to test the differences between the number of players and which games were popular before and during the pandemic. 
+
+```{r}
+library(tidyverse)
+library(zoo)
+
+tuesdata <- tidytuesdayR::tt_load('2021-03-16')
+games <- tuesdata$games
+
+games <- games %>%
+  mutate(ratio = as.numeric(str_extract(avg_peak_perc, "(\\d{1,}.\\d{1,}|\\d{2})"))/100)
+# ratio needs to be between 0 and 1 
+
+games <- games %>%
+  mutate(date = paste(year, match(games$month, month.name), sep = ""))
+
+games$date <- as.yearmon(as.character(games$date), "%Y%m")
+
+games <- games %>%
+  group_by(gamename) %>%
+  arrange(date, .by_group = TRUE) %>%
+  mutate(pct_change = gain/lag(avg))
+# calculate percent change of players per month 
+
+games_2020 <- games %>%
+  filter(year == 2020) %>%
+  filter(month == "December")
+
+head(games_2020)
+```
+
+```{r}
+library(gggibbous)
+
+top_10 <- games_2020[order(-games_2020$peak), ][1:10, ]
+bottom_10 <- games_2020[order(games_2020$peak), ][1:10, ]
+
+ggplot(top_10, aes(ratio, gamename), size = ratio) +
+  geom_moon(aes(ratio = ratio), fill = c("grey", "orange", "turquoise", "blue", "gold", "dark green", "white", "yellow", "black", "#FF2400")) + 
+  geom_moon(aes(ratio = (1 - ratio)), right = FALSE, fill = c("gold", "red", "magenta", "orange", "green", "red", "light blue", "grey", "#bab86c",  "#b7410e")) + 
+  theme_minimal() +
+  labs(title = "Top 10 Games with Highest Proportion \nof Average and Peak Players", 
+       x = "Share of Average Players in Maximum Value",
+       caption = "Source: SteamCharts | github: julia-tache") + 
+  theme(
+    panel.grid = element_blank(),
+    axis.title.y = element_blank(), 
+    plot.title = element_text(hjust = 0.5)
+  )
+```
+
+I tried coloring the graph to match the "aesthetic" of the games, but it looks a little messy. I'll stick to black and white going forward. 
+
+```{r}
+ggplot(bottom_10, aes(ratio, gamename)) +
+  geom_moon(aes(ratio = ratio), fill = "black") + 
+  geom_moon(aes(ratio = (1 - ratio)), right = FALSE) + 
+  theme_minimal() +
+  labs(title = "Bottom 10 Games with Lowest Proportion \nof Average and Peak Players", 
+       x = "Share of Average Players in Maximum Value",
+       caption = "Source: SteamCharts | github: julia-tache") + 
+  theme(
+    panel.grid = element_blank(),
+    axis.title.y = element_blank(), 
+    plot.title = element_text(hjust = 0.5)
+  )
+```
+
+To align the graph, the data must be put into "long" format. 
+
+```{r}
+top_10_moon <- top_10 %>%
+  select(ratio, pct_change) %>%
+  rename("Average Peak Percent" = "ratio") 
+
+top_10_moon <- as.data.frame(top_10_moon)
+
+top_10_moon$pct_change[top_10_moon$pct_change < 0] <- 0
+
+top_10_moon <- top_10_moon %>%
+  rename("Gain in Average Players" = "pct_change")
+
+categories <- c("Average Peak Percent", "Gain in Average Players")
+
+tidytop10 <- reshape(
+  top_10_moon,
+  varying = categories,
+  v.names = "Value",
+  timevar = "Category",
+  times = factor(categories, levels = categories),
+  idvar = "gamename",
+  direction = "long"
+)
+
+tidytop10 <- na.omit(tidytop10)
+
+ggplot(tidytop10, aes(0, 0)) +
+  geom_moon(aes(ratio = Value), fill = "black") +
+  geom_moon(aes(ratio = (1 - Value), right = FALSE)) +
+  facet_grid(gamename ~ Category, switch = "y") +
+  theme_minimal() +
+  labs(title = "Top 10 Games with Highest Proportion \nof Average and Peak Players",
+       caption = "Source: SteamCharts | github: julia-tache") + 
+  theme(
+    panel.grid = element_blank(),
+    strip.text.y.left = element_text(angle = 0, hjust = 1),
+    axis.text = element_blank(),
+    axis.title = element_blank(), 
+    plot.title = element_text(hjust = 0.5)
+  )
+```
+
+```{r}
+top_10 <- top_10 %>%
+  select(ratio) %>%
+  rename("Average Peak Percent" = "ratio")
+
+top_10 <- as.data.frame(top_10)
+
+categories <- c("Average Peak Percent")
+
+tidytop10 <- reshape(
+  top_10,
+  varying = categories,
+  v.names = "Value",
+  timevar = "Category",
+  times = factor(categories, levels = categories),
+  idvar = "gamename",
+  direction = "long"
+)
+
+tidytop10 <- na.omit(tidytop10)
+
+ggplot(tidytop10, aes(0, 0)) +
+  geom_moon(aes(ratio = Value), fill = "black") +
+  geom_moon(aes(ratio = (1 - Value), right = FALSE)) +
+  facet_grid(gamename ~ Category, switch = "y") +
+  theme_minimal() +
+  labs(title = "Bottom 10 Games with Lowest Proportion \nof Average and Peak Players",
+       caption = "Source: SteamCharts | github: julia-tache") + 
+  theme(
+    panel.grid = element_blank(),
+    strip.text.y.left = element_text(angle = 0, hjust = 1),
+    axis.text = element_blank(),
+    axis.title = element_blank(), 
+    plot.title = element_text(hjust = 0.5)
+  )
+```
+
+```{r}
+bottom_10 <- bottom_10 %>%
+  select(ratio) %>%
+  rename("Average Peak Percent" = "ratio")
+
+bottom_10 <- as.data.frame(bottom_10)
+
+categories <- c("Average Peak Percent")
+
+tidytop10 <- reshape(
+  bottom_10,
+  varying = categories,
+  v.names = "Value",
+  timevar = "Category",
+  times = factor(categories, levels = categories),
+  idvar = "gamename",
+  direction = "long"
+)
+
+tidytop10 <- na.omit(tidytop10)
+
+ggplot(tidytop10, aes(0, 0)) +
+  geom_moon(aes(ratio = Value), fill = "black") +
+  geom_moon(aes(ratio = (1 - Value), right = FALSE)) +
+  facet_grid(gamename ~ Category, switch = "y") +
+  theme_minimal() +
+  labs(title = "Bottom 10 Games with Lowest Proportion \nof Average and Peak Players",
+       caption = "Source: SteamCharts | github: julia-tache") + 
+  theme(
+    panel.grid = element_blank(),
+    strip.text.y.left = element_text(angle = 0, hjust = 1),
+    axis.text = element_blank(),
+    axis.title = element_blank(), 
+    plot.title = element_text(hjust = 0.5)
+  )
+```
+
