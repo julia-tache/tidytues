@@ -1,0 +1,449 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={Tidy Tuesday - Week 13 (2021)},
+  pdfauthor={Julia Tache},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{dcolumn}
+\ifluatex
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+
+\title{Tidy Tuesday - Week 13 (2021)}
+\author{Julia Tache}
+\date{3/23/2021}
+
+\begin{document}
+\maketitle
+
+This week's data come from the United Nations by way of the Harvard
+Dataverse. The data provide an interesting look into UN sessions from
+its 1946 inception, the issues discussed, the votes that took place, and
+the countries who voted.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(tidyverse)}
+
+\NormalTok{tuesdata \textless{}{-}}\StringTok{ }\NormalTok{tidytuesdayR}\OperatorTok{::}\KeywordTok{tt\_load}\NormalTok{(}\StringTok{\textquotesingle{}2021{-}03{-}23\textquotesingle{}}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Downloading file 1 of 3: `unvotes.csv`
+##  Downloading file 2 of 3: `roll_calls.csv`
+##  Downloading file 3 of 3: `issues.csv`
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{unvotes \textless{}{-}}\StringTok{ }\NormalTok{tuesdata}\OperatorTok{$}\NormalTok{unvotes}
+\NormalTok{roll\_calls \textless{}{-}}\StringTok{ }\NormalTok{tuesdata}\OperatorTok{$}\NormalTok{roll\_calls}
+\NormalTok{issues \textless{}{-}}\StringTok{ }\NormalTok{tuesdata}\OperatorTok{$}\NormalTok{issues}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{head}\NormalTok{(unvotes)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 6 x 4
+##    rcid country            country_code vote 
+##   <dbl> <chr>              <chr>        <chr>
+## 1     3 United States      US           yes  
+## 2     3 Canada             CA           no   
+## 3     3 Cuba               CU           yes  
+## 4     3 Haiti              HT           yes  
+## 5     3 Dominican Republic DO           yes  
+## 6     3 Mexico             MX           yes
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{head}\NormalTok{(roll\_calls)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 6 x 9
+##    rcid session importantvote date       unres  amend  para short   descr       
+##   <dbl>   <dbl>         <dbl> <date>     <chr>  <dbl> <dbl> <chr>   <chr>       
+## 1     3       1             0 1946-01-01 R/1/66     1     0 AMENDM~ "TO ADOPT A~
+## 2     4       1             0 1946-01-02 R/1/79     0     0 SECURI~ "TO ADOPT A~
+## 3     5       1             0 1946-01-04 R/1/98     0     0 VOTING~ "TO ADOPT T~
+## 4     6       1             0 1946-01-04 R/1/1~     0     0 DECLAR~ "TO ADOPT A~
+## 5     7       1             0 1946-01-02 R/1/2~     1     0 GENERA~ "TO ADOPT A~
+## 6     8       1             0 1946-01-05 R/1/2~     1     0 ECOSOC~ "TO ADOPT A~
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{head}\NormalTok{(issues)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 6 x 3
+##    rcid short_name issue               
+##   <dbl> <chr>      <chr>               
+## 1    77 me         Palestinian conflict
+## 2  9001 me         Palestinian conflict
+## 3  9002 me         Palestinian conflict
+## 4  9003 me         Palestinian conflict
+## 5  9004 me         Palestinian conflict
+## 6  9005 me         Palestinian conflict
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\ControlFlowTok{if}\NormalTok{ (}\OperatorTok{!}\KeywordTok{require}\NormalTok{(}\StringTok{"rworldmap"}\NormalTok{)) \{}
+  \KeywordTok{install.packages}\NormalTok{(}\StringTok{"rworldmap"}\NormalTok{)}
+  \KeywordTok{library}\NormalTok{(rworldmap)}
+\NormalTok{\}}
+
+\ControlFlowTok{if}\NormalTok{ (}\OperatorTok{!}\KeywordTok{require}\NormalTok{(}\StringTok{"ggflags"}\NormalTok{)) \{}
+\NormalTok{  devtools}\OperatorTok{::}\KeywordTok{install\_github}\NormalTok{(}\StringTok{"rensa/ggflags"}\NormalTok{)}
+  \KeywordTok{library}\NormalTok{(ggflags)}
+\NormalTok{\}}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{countries\_votes \textless{}{-}}\StringTok{ }\KeywordTok{as.data.frame}\NormalTok{(}\KeywordTok{table}\NormalTok{(unvotes}\OperatorTok{$}\NormalTok{country\_code))}
+\KeywordTok{colnames}\NormalTok{(countries\_votes) \textless{}{-}}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"country"}\NormalTok{, }\StringTok{"value"}\NormalTok{)}
+\NormalTok{matched \textless{}{-}}\StringTok{ }\KeywordTok{joinCountryData2Map}\NormalTok{(countries\_votes, }\DataTypeTok{joinCode=}\StringTok{"ISO2"}\NormalTok{, }\DataTypeTok{nameJoinColumn=}\StringTok{"country"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 192 codes from your data successfully matched countries in the map
+## 4 codes from your data failed to match with a country code in the map
+## 50 codes from the map weren't represented in your data
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(classInt)}
+\KeywordTok{library}\NormalTok{(RColorBrewer)}
+
+\KeywordTok{png}\NormalTok{(}\DataTypeTok{file =} \StringTok{"UNVotesWorldMap.png"}\NormalTok{,}
+    \DataTypeTok{width =} \DecValTok{900}\NormalTok{, }\DataTypeTok{height =} \DecValTok{600}\NormalTok{)}
+
+\KeywordTok{par}\NormalTok{(}\DataTypeTok{mai=}\KeywordTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{,}\DecValTok{0}\NormalTok{,}\FloatTok{0.2}\NormalTok{,}\DecValTok{0}\NormalTok{), }\DataTypeTok{xaxs =} \StringTok{"i"}\NormalTok{, }\DataTypeTok{yaxs =} \StringTok{"i"}\NormalTok{)}
+\NormalTok{classInt \textless{}{-}}\StringTok{ }\KeywordTok{classIntervals}\NormalTok{(matched[[}\StringTok{"value"}\NormalTok{]], }\DataTypeTok{n =} \DecValTok{10}\NormalTok{, }\DataTypeTok{style =} \StringTok{"jenks"}\NormalTok{)}
+\NormalTok{catMethod =}\StringTok{ }\NormalTok{classInt[[}\StringTok{"brks"}\NormalTok{]]}
+\CommentTok{\#getting a colour scheme from the RColorBrewer package}
+\NormalTok{colourPalette \textless{}{-}}\StringTok{ }\KeywordTok{brewer.pal}\NormalTok{(}\DecValTok{10}\NormalTok{, }\StringTok{"YlOrRd"}\NormalTok{)}
+\NormalTok{mapParams \textless{}{-}}\StringTok{ }\KeywordTok{mapCountryData}\NormalTok{(matched,}
+               \DataTypeTok{nameColumnToPlot =} \StringTok{"value"}\NormalTok{,}
+               \DataTypeTok{mapTitle =} \StringTok{"Number of UN Votes by Country"}\NormalTok{,}
+               \DataTypeTok{catMethod =}\NormalTok{ catMethod,}
+               \DataTypeTok{colourPalette =}\NormalTok{ colourPalette,}
+               \DataTypeTok{oceanCol =} \StringTok{"lightblue"}\NormalTok{,}
+               \DataTypeTok{missingCountryCol =} \StringTok{"white"}\NormalTok{,}
+               \DataTypeTok{addLegend =} \OtherTok{FALSE}\NormalTok{,}
+               \DataTypeTok{lwd =} \DecValTok{1}\NormalTok{)}
+\KeywordTok{do.call}\NormalTok{(addMapLegend, }\KeywordTok{c}\NormalTok{(mapParams, }\DataTypeTok{legendWidth =} \FloatTok{0.5}\NormalTok{, }\DataTypeTok{legendMar =} \DecValTok{2}\NormalTok{))}
+
+\KeywordTok{labelCountries}\NormalTok{(matched, }
+               \DataTypeTok{nameCountryColumn =} \StringTok{"country"}\NormalTok{, }
+               \DataTypeTok{nameX =} \StringTok{"LON"}\NormalTok{, }
+               \DataTypeTok{nameY =} \StringTok{"LAT"}\NormalTok{, }
+               \DataTypeTok{nameColumnToPlot =} \StringTok{""}\NormalTok{, }
+               \DataTypeTok{col =} \StringTok{"black"}\NormalTok{,}
+               \DataTypeTok{cex =} \FloatTok{0.5}\NormalTok{)}
+
+\KeywordTok{mtext}\NormalTok{(}\StringTok{"Source: Erik Voeten | github: julia{-}tache | March 23rd, 2021"}\NormalTok{, }\DataTypeTok{side =} \DecValTok{1}\NormalTok{, }\DataTypeTok{line =} \DecValTok{{-}1}\NormalTok{)}
+
+\KeywordTok{dev.off}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## pdf 
+##   2
+\end{verbatim}
+
+Canada, U.S. Russia, Brazil, India, Mexico, etc. are amongst the nations
+with the most votes cast/most represented in the data.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{joined\_df \textless{}{-}}\StringTok{ }\KeywordTok{full\_join}\NormalTok{(unvotes, issues)}
+\NormalTok{joined\_df \textless{}{-}}\StringTok{ }\KeywordTok{full\_join}\NormalTok{(joined\_df, roll\_calls)}
+
+\KeywordTok{arrange}\NormalTok{(}\KeywordTok{as.data.frame}\NormalTok{(}\KeywordTok{table}\NormalTok{(joined\_df}\OperatorTok{$}\NormalTok{issue)), }\OperatorTok{{-}}\NormalTok{Freq)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##                                   Var1   Freq
+## 1         Arms control and disarmament 170497
+## 2                 Palestinian conflict 158656
+## 3                         Human rights 156623
+## 4 Nuclear weapons and nuclear material 133635
+## 5                          Colonialism 129708
+## 6                 Economic development 108759
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\CommentTok{\# Arms control and disarmament is the most common issue voted on }
+
+\NormalTok{summary\_df \textless{}{-}}\StringTok{ }\NormalTok{joined\_df }\OperatorTok{\%\textgreater{}\%}
+\StringTok{  }\KeywordTok{filter}\NormalTok{(importantvote }\OperatorTok{==}\StringTok{ }\DecValTok{1}\NormalTok{) }\OperatorTok{\%\textgreater{}\%}
+\StringTok{  }\KeywordTok{group\_by}\NormalTok{(country\_code) }\OperatorTok{\%\textgreater{}\%}
+\StringTok{  }\KeywordTok{count}\NormalTok{(issue) }\OperatorTok{\%\textgreater{}\%}
+\StringTok{  }\KeywordTok{rename}\NormalTok{(}\StringTok{"value"}\NormalTok{ =}\StringTok{ "n"}\NormalTok{) }\OperatorTok{\%\textgreater{}\%}
+\StringTok{  }\KeywordTok{filter}\NormalTok{(issue }\OperatorTok{==}\StringTok{ "Arms control and disarmament"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{countries\_imp\_votes \textless{}{-}}\StringTok{ }\NormalTok{summary\_df }\OperatorTok{\%\textgreater{}\%}
+\StringTok{  }\KeywordTok{select}\NormalTok{(country\_code, value) }
+\KeywordTok{colnames}\NormalTok{(countries\_imp\_votes) \textless{}{-}}\StringTok{ }\KeywordTok{c}\NormalTok{(}\StringTok{"country"}\NormalTok{, }\StringTok{"value"}\NormalTok{)}
+\NormalTok{matched \textless{}{-}}\StringTok{ }\KeywordTok{joinCountryData2Map}\NormalTok{(countries\_imp\_votes, }\DataTypeTok{joinCode=}\StringTok{"ISO2"}\NormalTok{, }\DataTypeTok{nameJoinColumn=}\StringTok{"country"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 191 codes from your data successfully matched countries in the map
+## 5 codes from your data failed to match with a country code in the map
+## 51 codes from the map weren't represented in your data
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{png}\NormalTok{(}\DataTypeTok{file =} \StringTok{"ImpUNVotesWorldMap.png"}\NormalTok{,}
+    \DataTypeTok{width =} \DecValTok{900}\NormalTok{, }\DataTypeTok{height =} \DecValTok{600}\NormalTok{)}
+
+\KeywordTok{par}\NormalTok{(}\DataTypeTok{mai=}\KeywordTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{,}\DecValTok{0}\NormalTok{,}\FloatTok{0.2}\NormalTok{,}\DecValTok{0}\NormalTok{), }\DataTypeTok{xaxs =} \StringTok{"i"}\NormalTok{, }\DataTypeTok{yaxs =} \StringTok{"i"}\NormalTok{)}
+\NormalTok{classInt \textless{}{-}}\StringTok{ }\KeywordTok{classIntervals}\NormalTok{(matched[[}\StringTok{"value"}\NormalTok{]], }\DataTypeTok{n =} \DecValTok{5}\NormalTok{, }\DataTypeTok{style =} \StringTok{"jenks"}\NormalTok{)}
+\NormalTok{catMethod =}\StringTok{ }\NormalTok{classInt[[}\StringTok{"brks"}\NormalTok{]]}
+\CommentTok{\#getting a colour scheme from the RColorBrewer package}
+\NormalTok{colourPalette \textless{}{-}}\StringTok{ }\KeywordTok{brewer.pal}\NormalTok{(}\DecValTok{5}\NormalTok{, }\StringTok{"PiYG"}\NormalTok{)}
+\NormalTok{mapParams \textless{}{-}}\StringTok{ }\KeywordTok{mapCountryData}\NormalTok{(matched,}
+               \DataTypeTok{nameColumnToPlot =} \StringTok{"value"}\NormalTok{,}
+               \DataTypeTok{mapTitle =} \StringTok{"Number of Important UN Votes on Arms Control by Country"}\NormalTok{,}
+               \DataTypeTok{catMethod =}\NormalTok{ catMethod,}
+               \DataTypeTok{colourPalette =}\NormalTok{ colourPalette,}
+               \DataTypeTok{oceanCol =} \StringTok{"lightblue"}\NormalTok{,}
+               \DataTypeTok{missingCountryCol =} \StringTok{"white"}\NormalTok{,}
+               \DataTypeTok{addLegend =} \OtherTok{FALSE}\NormalTok{,}
+               \DataTypeTok{lwd =} \DecValTok{1}\NormalTok{)}
+\KeywordTok{do.call}\NormalTok{(addMapLegend, }\KeywordTok{c}\NormalTok{(mapParams, }\DataTypeTok{legendWidth =} \FloatTok{0.5}\NormalTok{, }\DataTypeTok{legendMar =} \DecValTok{2}\NormalTok{))}
+
+\KeywordTok{labelCountries}\NormalTok{(matched, }
+               \DataTypeTok{nameCountryColumn =} \StringTok{"country"}\NormalTok{, }
+               \DataTypeTok{nameX =} \StringTok{"LON"}\NormalTok{, }
+               \DataTypeTok{nameY =} \StringTok{"LAT"}\NormalTok{, }
+               \DataTypeTok{nameColumnToPlot =} \StringTok{""}\NormalTok{, }
+               \DataTypeTok{col =} \StringTok{"black"}\NormalTok{,}
+               \DataTypeTok{cex =} \FloatTok{0.5}\NormalTok{)}
+
+\KeywordTok{mtext}\NormalTok{(}\StringTok{"Source: Erik Voeten | github: julia{-}tache | March 23rd, 2021"}\NormalTok{, }\DataTypeTok{side =} \DecValTok{1}\NormalTok{, }\DataTypeTok{line =} \DecValTok{{-}1}\NormalTok{)}
+
+\KeywordTok{dev.off}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## pdf 
+##   2
+\end{verbatim}
+
+This choropleth map looks similar to the previous map: certain countries
+seem to have a sizable impact over decision-making in the UN based on
+their volume of votes cast.
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(ggflags)}
+\NormalTok{countries\_votes \textless{}{-}}\StringTok{ }\KeywordTok{na.omit}\NormalTok{(countries\_votes) }\OperatorTok{\%\textgreater{}\%}
+\StringTok{  }\KeywordTok{filter}\NormalTok{(country }\OperatorTok{!=}\StringTok{ "DD"}\NormalTok{) }\CommentTok{\# remove outdated symbol for East Germany }
+
+\NormalTok{highest\_lowest\_}\DecValTok{20}\NormalTok{ \textless{}{-}}\StringTok{ }\KeywordTok{rbind}\NormalTok{(}\KeywordTok{arrange}\NormalTok{(countries\_votes, }\OperatorTok{{-}}\NormalTok{value)[}\DecValTok{1}\OperatorTok{:}\DecValTok{10}\NormalTok{, ], }
+                \KeywordTok{arrange}\NormalTok{(countries\_votes, }
+                        \OperatorTok{{-}}\NormalTok{value)[(}\KeywordTok{nrow}\NormalTok{(countries\_votes) }\OperatorTok{{-}}\StringTok{ }\DecValTok{9}\NormalTok{)}\OperatorTok{:}\KeywordTok{nrow}\NormalTok{(countries\_votes), ]) }\OperatorTok{\%\textgreater{}\%}
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{code =} \KeywordTok{tolower}\NormalTok{(country)) }\OperatorTok{\%\textgreater{}\%}
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{binary\_val =} \KeywordTok{ifelse}\NormalTok{(value }\OperatorTok{\textgreater{}}\StringTok{ }\KeywordTok{median}\NormalTok{(value), }\StringTok{"top"}\NormalTok{, }\StringTok{"bottom"}\NormalTok{))}
+
+\KeywordTok{ggplot}\NormalTok{(highest\_lowest\_}\DecValTok{20}\NormalTok{, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{x =} \KeywordTok{reorder}\NormalTok{(country, value), }\DataTypeTok{y =}\NormalTok{ value, }\DataTypeTok{fill =}\NormalTok{ binary\_val)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{geom\_bar}\NormalTok{(}\DataTypeTok{stat =} \StringTok{"identity"}\NormalTok{) }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{geom\_flag}\NormalTok{(}\DataTypeTok{y =} \DecValTok{{-}1}\NormalTok{, }\KeywordTok{aes}\NormalTok{(}\DataTypeTok{country =}\NormalTok{ code), }\DataTypeTok{size =} \DecValTok{4}\NormalTok{) }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{scale\_y\_continuous}\NormalTok{(}\DataTypeTok{expand =} \KeywordTok{c}\NormalTok{(}\FloatTok{0.1}\NormalTok{, }\DecValTok{1}\NormalTok{)) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{xlab}\NormalTok{(}\StringTok{"Country"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{ylab}\NormalTok{(}\StringTok{"Votes"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{title =} \StringTok{"Total UN Votes: Top 10 and Bottom 10 Countries"}\NormalTok{,}
+       \DataTypeTok{caption =} \StringTok{"Source: Erik Voeten | github: julia{-}tache | March 23rd, 2021"}\NormalTok{) }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{theme\_minimal}\NormalTok{() }\OperatorTok{+}
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{legend.position =} \StringTok{"none"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{scale\_fill\_brewer}\NormalTok{(}\DataTypeTok{palette =} \StringTok{"PuBuGn"}\NormalTok{) }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{coord\_flip}\NormalTok{()}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Tidy-Tuesday---Week-13--2021-_files/figure-latex/barplot-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{ggsave}\NormalTok{(}\StringTok{"plot.png"}\NormalTok{, }\DataTypeTok{plot =} \KeywordTok{last\_plot}\NormalTok{())}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(scales)}
+
+\NormalTok{joined\_df}\OperatorTok{$}\NormalTok{year \textless{}{-}}\StringTok{ }\KeywordTok{str\_extract}\NormalTok{(joined\_df}\OperatorTok{$}\NormalTok{date, }\StringTok{"}\CharTok{\textbackslash{}\textbackslash{}}\StringTok{d\{4\}"}\NormalTok{)}
+
+\NormalTok{issues\_by\_year\_df \textless{}{-}}\StringTok{ }\NormalTok{joined\_df }\OperatorTok{\%\textgreater{}\%}
+\StringTok{  }\KeywordTok{group\_by}\NormalTok{(year) }\OperatorTok{\%\textgreater{}\%}
+\StringTok{  }\KeywordTok{count}\NormalTok{(issue) }\OperatorTok{\%\textgreater{}\%}
+\StringTok{  }\KeywordTok{group\_by}\NormalTok{(year) }\OperatorTok{\%\textgreater{}\%}
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{percent =}\NormalTok{ (n }\OperatorTok{/}\StringTok{ }\KeywordTok{sum}\NormalTok{(n)))}
+
+\NormalTok{issues\_by\_year\_df \textless{}{-}}\StringTok{ }\KeywordTok{na.omit}\NormalTok{(issues\_by\_year\_df)}
+
+\KeywordTok{ggplot}\NormalTok{(issues\_by\_year\_df, }\KeywordTok{aes}\NormalTok{(year, issue, }\DataTypeTok{fill =}\NormalTok{ percent)) }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{geom\_tile}\NormalTok{() }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{title =} \StringTok{"UN Issues Voted on Over the Years"}\NormalTok{,}
+       \DataTypeTok{caption =} \StringTok{"Source: Erik Voeten | github: julia{-}tache | March 23rd, 2021"}\NormalTok{,}
+       \DataTypeTok{fill =} \StringTok{"Percent of Total Issues Discussed: "}\NormalTok{) }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{scale\_fill\_gradient}\NormalTok{(}\DataTypeTok{low =} \StringTok{"\#FFFDD0"}\NormalTok{, }\DataTypeTok{high =} \StringTok{"\#5b92e5"}\NormalTok{, }\DataTypeTok{labels =}\NormalTok{ percent) }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{theme\_minimal}\NormalTok{() }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{plot.title =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{face =} \StringTok{"bold"}\NormalTok{, }\DataTypeTok{hjust =} \FloatTok{0.5}\NormalTok{),}
+        \DataTypeTok{axis.title =} \KeywordTok{element\_blank}\NormalTok{(),}
+        \DataTypeTok{axis.text.x =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{size =} \DecValTok{4}\NormalTok{, }\DataTypeTok{angle =} \DecValTok{45}\NormalTok{, }\DataTypeTok{hjust =} \DecValTok{1}\NormalTok{),}
+        \DataTypeTok{axis.text.y =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{size =} \DecValTok{7}\NormalTok{),}
+        \DataTypeTok{legend.title =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{size =} \DecValTok{9}\NormalTok{), }
+        \DataTypeTok{legend.text =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{size =} \DecValTok{7}\NormalTok{),}
+        \DataTypeTok{legend.position=}\StringTok{"bottom"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Tidy-Tuesday---Week-13--2021-_files/figure-latex/heatmap of different issues per year-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{ggsave}\NormalTok{(}\StringTok{"plot2.png"}\NormalTok{, }\DataTypeTok{plot =} \KeywordTok{last\_plot}\NormalTok{())}
+\end{Highlighting}
+\end{Shaded}
+
+Resolutions related to colonialism have decreased in number, while
+discussions on issues of human rights and arms control and disarmament
+have increased steadily as international conversations and priorities
+have shifted. Exploring the unique historical factors of each
+year/decade and seeing how that impacted UN resolutions might be an
+interesting direction to take further analysis toward.
+
+quantixed wrote a really helpful article on \emph{R bloggers} about
+creating world maps using ISO codes and matching those codes up with
+ggflags data for some really neat visualizations:
+
+Citation:
+\url{https://www.r-bloggers.com/2019/03/all-around-the-world-maps-and-flags-in-r/}
+
+\end{document}

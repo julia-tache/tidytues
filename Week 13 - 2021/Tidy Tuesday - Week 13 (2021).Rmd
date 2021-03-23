@@ -1,0 +1,208 @@
+---
+title: "Tidy Tuesday - Week 13 (2021)"
+author: "Julia Tache"
+date: "3/23/2021"
+header-includes:
+   - \usepackage{dcolumn}
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default 
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+This week's data come from the United Nations by way of the Harvard Dataverse. The data provide an interesting look into UN sessions from its 1946 inception, the issues discussed, the votes that took place, and the countries who voted. 
+
+```{r load data}
+library(tidyverse)
+
+tuesdata <- tidytuesdayR::tt_load('2021-03-23')
+
+unvotes <- tuesdata$unvotes
+roll_calls <- tuesdata$roll_calls
+issues <- tuesdata$issues
+```
+
+```{r view data}
+head(unvotes)
+head(roll_calls)
+head(issues)
+```
+
+```{r load packages}
+if (!require("rworldmap")) {
+  install.packages("rworldmap")
+  library(rworldmap)
+}
+
+if (!require("ggflags")) {
+  devtools::install_github("rensa/ggflags")
+  library(ggflags)
+}
+```
+
+```{r create map dataset}
+countries_votes <- as.data.frame(table(unvotes$country_code))
+colnames(countries_votes) <- c("country", "value")
+matched <- joinCountryData2Map(countries_votes, joinCode="ISO2", nameJoinColumn="country")
+```
+
+```{r map 1}
+library(classInt)
+library(RColorBrewer)
+
+png(file = "UNVotesWorldMap.png",
+    width = 900, height = 600)
+
+par(mai=c(0,0,0.2,0), xaxs = "i", yaxs = "i")
+classInt <- classIntervals(matched[["value"]], n = 10, style = "jenks")
+catMethod = classInt[["brks"]]
+#getting a colour scheme from the RColorBrewer package
+colourPalette <- brewer.pal(10, "YlOrRd")
+mapParams <- mapCountryData(matched,
+               nameColumnToPlot = "value",
+               mapTitle = "Number of UN Votes by Country",
+               catMethod = catMethod,
+               colourPalette = colourPalette,
+               oceanCol = "lightblue",
+               missingCountryCol = "white",
+               addLegend = FALSE,
+               lwd = 1)
+do.call(addMapLegend, c(mapParams, legendWidth = 0.5, legendMar = 2))
+
+labelCountries(matched, 
+               nameCountryColumn = "country", 
+               nameX = "LON", 
+               nameY = "LAT", 
+               nameColumnToPlot = "", 
+               col = "black",
+               cex = 0.5)
+
+mtext("Source: Erik Voeten | github: julia-tache | March 23rd, 2021", side = 1, line = -1)
+
+dev.off()
+```
+
+Canada, U.S. Russia, Brazil, India, Mexico, etc. are amongst the nations with the most votes cast/most represented in the data.
+
+```{r summary dataset for mapping}
+joined_df <- full_join(unvotes, issues)
+joined_df <- full_join(joined_df, roll_calls)
+
+arrange(as.data.frame(table(joined_df$issue)), -Freq)
+# Arms control and disarmament is the most common issue voted on 
+
+summary_df <- joined_df %>%
+  filter(importantvote == 1) %>%
+  group_by(country_code) %>%
+  count(issue) %>%
+  rename("value" = "n") %>%
+  filter(issue == "Arms control and disarmament")
+```
+
+```{r create dataset for mapping 2}
+countries_imp_votes <- summary_df %>%
+  select(country_code, value) 
+colnames(countries_imp_votes) <- c("country", "value")
+matched <- joinCountryData2Map(countries_imp_votes, joinCode="ISO2", nameJoinColumn="country")
+```
+
+```{r map 2}
+png(file = "ImpUNVotesWorldMap.png",
+    width = 900, height = 600)
+
+par(mai=c(0,0,0.2,0), xaxs = "i", yaxs = "i")
+classInt <- classIntervals(matched[["value"]], n = 5, style = "jenks")
+catMethod = classInt[["brks"]]
+#getting a colour scheme from the RColorBrewer package
+colourPalette <- brewer.pal(5, "PiYG")
+mapParams <- mapCountryData(matched,
+               nameColumnToPlot = "value",
+               mapTitle = "Number of Important UN Votes on Arms Control by Country",
+               catMethod = catMethod,
+               colourPalette = colourPalette,
+               oceanCol = "lightblue",
+               missingCountryCol = "white",
+               addLegend = FALSE,
+               lwd = 1)
+do.call(addMapLegend, c(mapParams, legendWidth = 0.5, legendMar = 2))
+
+labelCountries(matched, 
+               nameCountryColumn = "country", 
+               nameX = "LON", 
+               nameY = "LAT", 
+               nameColumnToPlot = "", 
+               col = "black",
+               cex = 0.5)
+
+mtext("Source: Erik Voeten | github: julia-tache | March 23rd, 2021", side = 1, line = -1)
+
+dev.off()
+```
+
+This choropleth map looks similar to the previous map: certain countries seem to have a sizable impact over decision-making in the UN based on their volume of votes cast. 
+
+```{r barplot}
+library(ggflags)
+countries_votes <- na.omit(countries_votes) %>%
+  filter(country != "DD") # remove outdated symbol for East Germany 
+
+highest_lowest_20 <- rbind(arrange(countries_votes, -value)[1:10, ], 
+                arrange(countries_votes, 
+                        -value)[(nrow(countries_votes) - 9):nrow(countries_votes), ]) %>%
+  mutate(code = tolower(country)) %>%
+  mutate(binary_val = ifelse(value > median(value), "top", "bottom"))
+
+ggplot(highest_lowest_20, aes(x = reorder(country, value), y = value, fill = binary_val)) +
+  geom_bar(stat = "identity") + 
+  geom_flag(y = -1, aes(country = code), size = 4) + 
+  scale_y_continuous(expand = c(0.1, 1)) +
+  xlab("Country") +
+  ylab("Votes") +
+  labs(title = "Total UN Votes: Top 10 and Bottom 10 Countries",
+       caption = "Source: Erik Voeten | github: julia-tache | March 23rd, 2021") + 
+  theme_minimal() +
+  theme(legend.position = "none") +
+  scale_fill_brewer(palette = "PuBuGn") + 
+  coord_flip()
+ggsave("plot.png", plot = last_plot())
+```
+```{r heatmap of different issues per year}
+library(scales)
+
+joined_df$year <- str_extract(joined_df$date, "\\d{4}")
+
+issues_by_year_df <- joined_df %>%
+  group_by(year) %>%
+  count(issue) %>%
+  group_by(year) %>%
+  mutate(percent = (n / sum(n)))
+
+issues_by_year_df <- na.omit(issues_by_year_df)
+
+ggplot(issues_by_year_df, aes(year, issue, fill = percent)) + 
+  geom_tile() + 
+  labs(title = "UN Issues Voted on Over the Years",
+       caption = "Source: Erik Voeten | github: julia-tache | March 23rd, 2021",
+       fill = "Percent of Total Issues Discussed: ") + 
+  scale_fill_gradient(low = "#FFFDD0", high = "#5b92e5", labels = percent) + 
+  theme_minimal() + 
+  theme(plot.title = element_text(face = "bold", hjust = 0.5),
+        axis.title = element_blank(),
+        axis.text.x = element_text(size = 4, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 7),
+        legend.title = element_text(size = 9), 
+        legend.text = element_text(size = 7),
+        legend.position="bottom")
+ggsave("plot2.png", plot = last_plot())
+```
+
+Resolutions related to colonialism have decreased in number, while discussions on issues of human rights and arms control and disarmament have increased steadily as international conversations and priorities have shifted. Exploring the unique historical factors of each year/decade and seeing how that impacted UN resolutions might be an interesting direction to take further analysis toward. 
+
+quantixed wrote a really helpful article on *R bloggers* about creating world maps using ISO codes and matching those codes up with ggflags data for some really neat visualizations:  
+
+Citation: https://www.r-bloggers.com/2019/03/all-around-the-world-maps-and-flags-in-r/
