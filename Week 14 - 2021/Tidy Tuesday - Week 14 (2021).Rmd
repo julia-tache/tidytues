@@ -1,0 +1,89 @@
+---
+title: "Tidy Tuesday - Week 14 (2021)"
+author: "Julia Tache"
+date: "3/30/2021"
+header-includes:
+   - \usepackage{dcolumn}
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default 
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+library(tidyverse)
+
+allShades <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-03-30/allShades.csv')
+```
+
+
+```{r clean data}
+library(tidyr)
+allShades$specific <- extract_numeric(allShades$specific)
+# allShades$specific <- str_extract(allShades$specific, "(0[[:punct:]]\\d)|(\\d)")
+allShades <- allShades %>% drop_na(specific, hex)
+
+head(allShades)
+arrange(data.frame(table(allShades$brand)), desc(Freq))
+```
+
+```{r plot 1}
+ggplot(allShades, aes(x = specific, y = 1, fill = lightness, color = hex)) +
+  geom_tile() + 
+  scale_color_identity() + 
+  scale_y_continuous(expand = c(0, 0)) +  
+  xlab("Shade No.") + 
+  labs(title = "Foundation Shades across Companies",
+       caption = "Source: The Pudding | github: julia-tache | March 30th, 2021") + 
+  theme_minimal() +
+  theme(legend.position = "none") + 
+  theme(plot.title = element_text(face = "bold", hjust = 0.5),
+        axis.title.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank()) + 
+  theme(panel.background = element_rect(fill = "black",
+                                        colour = "black",
+                                        size = 0.5, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.5, linetype = 'solid',
+                                        colour = "black"), 
+        panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
+                                        colour = "black")) + 
+  coord_fixed(ratio = 500)
+ggsave("plot1.png", plot = last_plot())
+```
+
+
+```{r}
+top_9 <- allShades %>%
+  filter(brand == "bareMinerals" | brand == "Tarte" | brand == "Clinique" | brand == "SEPHORA COLLECTION" | brand == "MAC" | brand == "Laura Mercier" | brand == "MAKE UP FOR EVER" | brand == "Estée Lauder" | brand == "FENTY BEAUTY by Rihanna")
+# excluding Dior 
+
+ggplot(top_9, aes(x = specific, y = 1)) +
+  geom_tile(aes(fill = lightness, color = hex)) + 
+  scale_color_identity() + 
+  scale_y_continuous(expand = c(0, 0)) +  
+  facet_wrap(~brand) +
+  xlab("Shade No.") + 
+  labs(title = "Foundation Shades across Companies",
+       caption = "Source: The Pudding | github: julia-tache | March 30th, 2021") + 
+  theme_minimal() +
+  theme(legend.position = "none") + 
+  theme(plot.title = element_text(face = "bold", hjust = 0.5),
+        axis.title.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank()) + 
+  theme(panel.background = element_rect(fill = "black",
+                                        colour = "black",
+                                        size = 0.5, linetype = "solid"),
+        panel.grid.major = element_line(size = 0.5, linetype = 'solid',
+                                        colour = "black"), 
+        panel.grid.minor = element_line(size = 0.25, linetype = 'solid',
+                                        colour = "black")) +
+  guides(fill = guide_colorbar(barwidth = 1))
+ggsave("plot2.png", plot = last_plot())
+```
