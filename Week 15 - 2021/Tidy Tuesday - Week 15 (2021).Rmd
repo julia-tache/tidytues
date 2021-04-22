@@ -1,0 +1,214 @@
+---
+title: "Tidy Tuesday - Week 15 (2021)"
+author: "Julia Tache"
+date: "04/22/2021"
+header-includes:
+   - \usepackage{dcolumn}
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default 
+always_allow_html: yes
+---
+
+*Note:* The original dataset for this Tidy Tuesday was posted on April 6th, 2021: https://github.com/rfordatascience/tidytuesday/tree/master/data/2021/2021-04-06 
+
+It's been quite a month on my end, so I haven't kept on track with Tidy Tuesday, but I'll be going back to work with the data from the last few weeks that I've missed. Hopefully I can get through Weeks 16 and 17 before this upcoming Tuesday and get myself back on schedule. 
+
+At the very least, this dataset on deforestation is fitting for today's holiday: Earth Day! 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+options(digits=4)
+```
+
+```{r load data}
+library(tidyverse)
+
+tuesdata <- tidytuesdayR::tt_load('2021-04-06')
+```
+
+```{r}
+forest <- tuesdata$forest
+forestarea <- tuesdata$forest_area
+brazil_loss <- tuesdata$brazil_loss
+soybean_use <- tuesdata$soybean_use
+vegetable_oil <- tuesdata$vegetable_oil
+```
+
+```{r}
+library(sf)
+library(rgeos)
+library(ggspatial)
+
+head(forest)
+head(forestarea)
+head(brazil_loss)
+head(soybean_use)
+head(vegetable_oil)
+
+forestarea$forest_area <- round(forestarea$forest_area, digits = 6)
+
+forestarea_2001 <- forestarea %>%
+  filter(year == 2001)
+
+forestarea_2020 <- forestarea %>%
+  filter(year == 2020)
+```
+
+I first created two maps of the percent of global forest area from 2001 and 2020, which reveals a noticable decline of forest area in central and Southern America as well as in India: 
+
+```{r}
+library(rworldmap)
+library(RColorBrewer)
+forest_area_map <- joinCountryData2Map(forestarea_2001, joinCode="ISO3", nameJoinColumn = "code")
+colourPalette <- brewer.pal(11, "Greens")
+
+par(mai=c(0,0,0.2,0))
+mapForest <- mapCountryData(forest_area_map,
+               nameColumnToPlot="forest_area",
+               mapTitle = "Percent of Global Forest Area (2001)",
+               catMethod = "quantiles",
+               colourPalette = colourPalette,
+               oceanCol="lightblue",
+               missingCountryCol="white",
+               addLegend = FALSE,
+               lwd = 1)
+
+mtext("Source: Our World in Data | github: julia-tache | April 22nd, 2021", side = 1, line = -1)
+mapForest$cutVector <- round(mapForest$cutVector, digits = 4)
+
+do.call(addMapLegendBoxes, c(mapForest, 
+                             x = "top", 
+                             title = "Change in Global Forest Area (in %)",
+                             cex = 0.7,
+                             pt.cex = 1,
+                             horiz = TRUE,
+                             bg = NA))
+
+```
+
+```{r}
+forest_area_map <- joinCountryData2Map(forestarea_2020, joinCode="ISO3", nameJoinColumn = "code")
+colourPalette <- brewer.pal(11, "Greens")
+
+par(mai=c(0,0,0.2,0))
+mapForest <- mapCountryData(forest_area_map,
+               nameColumnToPlot="forest_area",
+               mapTitle = "Percent of global forest area (2020)",
+               catMethod = "logFixedWidth",
+               colourPalette = colourPalette,
+               oceanCol="lightblue",
+               missingCountryCol="white",
+               addLegend = FALSE,
+               lwd = 1)
+
+mtext("Source: Our World in Data | github: julia-tache | April 22nd, 2021", side = 1, line = -1)
+mapForest$cutVector <- round(mapForest$cutVector, digits = 4)
+
+do.call(addMapLegendBoxes, c(mapForest, 
+                             x = "top", 
+                             title = "Change in Global Forest Area (in %)",
+                             cex = 0.7,
+                             pt.cex = 1,
+                             horiz = TRUE,
+                             bg = NA))
+```
+
+Next, I created a tile graph on the different causes of deforestation in Brazil. Huge shout out to Adrian Perez (@jesadrperez on Github) for the base of this code:  
+
+```{r}
+library(scales)
+loss_long <- brazil_loss %>% 
+  select(year, commercial_crops, flooding_due_to_dams, natural_disturbances, selective_logging, 
+         fire, mining, other_infrastructure, roads, tree_plantations_including_palm, small_scale_clearing) %>%
+  pivot_longer(cols = c("commercial_crops", "flooding_due_to_dams", "natural_disturbances", 
+                        "selective_logging", "fire", "mining", "other_infrastructure", "roads", 
+                        "tree_plantations_including_palm", "small_scale_clearing"), 
+               names_to = "reason", 
+               values_to = "count") %>%
+  mutate(count = count/1000) %>%
+  mutate(reason = str_replace_all(reason, "_", " "),
+    reason = str_to_title(reason),
+    reason = str_replace(reason, "Including Palm", "(Including Palm)"))
+
+ggplot(loss_long, aes(year, reason, fill = count)) + 
+  geom_tile(color = "white", size = 1) + 
+  scale_fill_distiller(direction = 1, palette = "Greens", labels = number_format()) +
+  scale_x_continuous(expand = c(0,0), position = "bottom") +
+  labs(title = "Deforestation in Brazil",
+    subtitle = str_wrap(
+      "Loss of Brazilian forest due to specific types of industry", 65),
+    fill = "Acres (in thousands)",
+    caption = "Source: Our World in Data | github: julia-tache | April 22nd, 2021",
+    x = NULL, 
+    y = NULL) + 
+  theme(text = element_text(size = 8),
+        plot.title = element_text(size = rel(2.5), face = "bold"),
+        plot.subtitle = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5), hjust = 0), 
+        axis.title.y = element_text(angle = 0),
+        legend.title = element_text(size = rel(1.5), vjust = 0.75),
+        plot.caption = element_text(size = rel(1), hjust = 0),
+        axis.text = element_text(size = rel(1.25)),
+        legend.text = element_text(size = rel(0.75)),
+        
+        plot.title.position = "plot",
+        plot.caption.position = "plot",
+  
+        legend.position = "top",
+        legend.justification = c(0, 0),
+    
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+    
+        rect = element_blank(),
+        plot.background = element_rect(fill = "white", color = "white"),
+        legend.background = element_rect(fill = "white", color = "white"))
+```
+
+```{r}
+loss_long_pasture <- brazil_loss %>% 
+  select(year, pasture, commercial_crops, small_scale_clearing, fire) %>%
+  pivot_longer(cols = c("pasture", "commercial_crops", "small_scale_clearing", "fire"), 
+               names_to = "reason", 
+               values_to = "count") %>%
+  mutate(count = count/1000) %>%
+  mutate(reason = str_to_title(reason),
+         reason = str_replace_all(reason, "_", " "))
+
+ggplot(loss_long_pasture, aes(year, reason, fill = count)) + 
+  geom_tile(color = "white", size = 1) + 
+  scale_fill_distiller(direction = 1, palette = "Greens", labels = number_format()) +
+  scale_x_continuous(expand = c(0,0), position = "bottom") +
+  labs(title = "Deforestation in Brazil due to Pastures",
+    subtitle = "Clearing pasture for livestock overwhelmingly affects forest usage",
+    fill = "Acres (in thousands)",
+    caption = "Source: Our World in Data | github: julia-tache | April 22nd, 2021",
+    x = NULL, 
+    y = NULL) + 
+  theme(text = element_text(size = 8),
+        plot.title = element_text(size = rel(2.5), face = "bold"),
+        plot.subtitle = element_text(size = rel(1.5)),
+        axis.title = element_text(size = rel(1.5), hjust = 0), 
+        axis.title.y = element_text(angle = 0),
+        legend.title = element_text(size = rel(1.5), vjust = 0.75),
+        plot.caption = element_text(size = rel(1), hjust = 0),
+        axis.text = element_text(size = rel(1.25)),
+        legend.text = element_text(size = rel(0.75)),
+        
+        plot.title.position = "plot",
+        plot.caption.position = "plot",
+  
+        legend.position = "top",
+        legend.justification = c(0, 0),
+    
+        axis.ticks = element_blank(),
+        panel.grid = element_blank(),
+    
+        rect = element_blank(),
+        plot.background = element_rect(fill = "white", color = "white"),
+        legend.background = element_rect(fill = "white", color = "white"))
+```
+
+I had to create a separate chart showing forest cleared for cattle pastures because of how high the numbers were compared to other industries. If we want to conserve our forests, we need to continue to make less waste, recycle, and adopt more plant-based foods as regular parts of our diet. 

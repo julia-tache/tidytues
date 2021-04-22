@@ -1,0 +1,464 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={Tidy Tuesday - Week 15 (2021)},
+  pdfauthor={Julia Tache},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{dcolumn}
+\ifluatex
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+
+\title{Tidy Tuesday - Week 15 (2021)}
+\author{Julia Tache}
+\date{04/22/2021}
+
+\begin{document}
+\maketitle
+
+\emph{Note:} The original dataset for this Tidy Tuesday was posted on
+April 6th, 2021:
+\url{https://github.com/rfordatascience/tidytuesday/tree/master/data/2021/2021-04-06}
+
+It's been quite a month on my end, so I haven't kept on track with Tidy
+Tuesday, but I'll be going back to work with the data from the last few
+weeks that I've missed. Hopefully I can get through Weeks 16 and 17
+before this upcoming Tuesday and get myself back on schedule.
+
+At the very least, this dataset on deforestation is fitting for today's
+holiday: Earth Day!
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(tidyverse)}
+
+\NormalTok{tuesdata \textless{}{-}}\StringTok{ }\NormalTok{tidytuesdayR}\OperatorTok{::}\KeywordTok{tt\_load}\NormalTok{(}\StringTok{\textquotesingle{}2021{-}04{-}06\textquotesingle{}}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 
+##  Downloading file 1 of 5: `forest.csv`
+##  Downloading file 2 of 5: `forest_area.csv`
+##  Downloading file 3 of 5: `brazil_loss.csv`
+##  Downloading file 4 of 5: `soybean_use.csv`
+##  Downloading file 5 of 5: `vegetable_oil.csv`
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{forest \textless{}{-}}\StringTok{ }\NormalTok{tuesdata}\OperatorTok{$}\NormalTok{forest}
+\NormalTok{forestarea \textless{}{-}}\StringTok{ }\NormalTok{tuesdata}\OperatorTok{$}\NormalTok{forest\_area}
+\NormalTok{brazil\_loss \textless{}{-}}\StringTok{ }\NormalTok{tuesdata}\OperatorTok{$}\NormalTok{brazil\_loss}
+\NormalTok{soybean\_use \textless{}{-}}\StringTok{ }\NormalTok{tuesdata}\OperatorTok{$}\NormalTok{soybean\_use}
+\NormalTok{vegetable\_oil \textless{}{-}}\StringTok{ }\NormalTok{tuesdata}\OperatorTok{$}\NormalTok{vegetable\_oil}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(sf)}
+\KeywordTok{library}\NormalTok{(rgeos)}
+\KeywordTok{library}\NormalTok{(ggspatial)}
+
+\KeywordTok{head}\NormalTok{(forest)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 6 x 4
+##   entity    code   year net_forest_conversion
+##   <chr>     <chr> <dbl>                 <dbl>
+## 1 Algeria   DZA    1990                -8800 
+## 2 Algeria   DZA    2000                33900 
+## 3 Algeria   DZA    2010                 7600 
+## 4 Algeria   DZA    2015                -1400.
+## 5 Argentina ARG    1990              -182600 
+## 6 Argentina ARG    2000              -316400
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{head}\NormalTok{(forestarea)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 6 x 4
+##   entity      code   year forest_area
+##   <chr>       <chr> <dbl>       <dbl>
+## 1 Afghanistan AFG    1990      0.0285
+## 2 Afghanistan AFG    1991      0.0286
+## 3 Afghanistan AFG    1992      0.0286
+## 4 Afghanistan AFG    1993      0.0287
+## 5 Afghanistan AFG    1994      0.0287
+## 6 Afghanistan AFG    1995      0.0288
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{head}\NormalTok{(brazil\_loss)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 6 x 14
+##   entity code   year commercial_crops flooding_due_to_~ natural_disturb~ pasture
+##   <chr>  <chr> <dbl>            <dbl>             <dbl>            <dbl>   <dbl>
+## 1 Brazil BRA    2001           280000                 0                0 1520000
+## 2 Brazil BRA    2002           415000             79000            35000 2568000
+## 3 Brazil BRA    2003           550000                 0            35000 2761000
+## 4 Brazil BRA    2004           747000             26000            22000 2564000
+## 5 Brazil BRA    2005           328000             17000            26000 2665000
+## 6 Brazil BRA    2006           188000             17000            26000 1861000
+## # ... with 7 more variables: selective_logging <dbl>, fire <dbl>, mining <dbl>,
+## #   other_infrastructure <dbl>, roads <dbl>,
+## #   tree_plantations_including_palm <dbl>, small_scale_clearing <dbl>
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{head}\NormalTok{(soybean\_use)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 6 x 6
+##   entity code   year human_food animal_feed processed
+##   <chr>  <chr> <dbl>      <dbl>       <dbl>     <dbl>
+## 1 Africa <NA>   1961      33000        6000     14000
+## 2 Africa <NA>   1962      43000        7000     17000
+## 3 Africa <NA>   1963      31000        7000      5000
+## 4 Africa <NA>   1964      43000        6000     14000
+## 5 Africa <NA>   1965      34000        6000     12000
+## 6 Africa <NA>   1966      41000        6000      2000
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{head}\NormalTok{(vegetable\_oil)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## # A tibble: 6 x 5
+##   entity      code   year crop_oil  production
+##   <chr>       <chr> <dbl> <chr>          <dbl>
+## 1 Afghanistan AFG    1961 Soybean           NA
+## 2 Afghanistan AFG    1961 Sesame          2253
+## 3 Afghanistan AFG    1961 Linseed         3531
+## 4 Afghanistan AFG    1961 Palm              NA
+## 5 Afghanistan AFG    1961 Rapeseed          NA
+## 6 Afghanistan AFG    1961 Groundnut         NA
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{forestarea}\OperatorTok{$}\NormalTok{forest\_area \textless{}{-}}\StringTok{ }\KeywordTok{round}\NormalTok{(forestarea}\OperatorTok{$}\NormalTok{forest\_area, }\DataTypeTok{digits =} \DecValTok{6}\NormalTok{)}
+
+\NormalTok{forestarea\_}\DecValTok{2001}\NormalTok{ \textless{}{-}}\StringTok{ }\NormalTok{forestarea }\OperatorTok{\%\textgreater{}\%}
+\StringTok{  }\KeywordTok{filter}\NormalTok{(year }\OperatorTok{==}\StringTok{ }\DecValTok{2001}\NormalTok{)}
+
+\NormalTok{forestarea\_}\DecValTok{2020}\NormalTok{ \textless{}{-}}\StringTok{ }\NormalTok{forestarea }\OperatorTok{\%\textgreater{}\%}
+\StringTok{  }\KeywordTok{filter}\NormalTok{(year }\OperatorTok{==}\StringTok{ }\DecValTok{2020}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+I first created two maps of the percent of global forest area from 2001
+and 2020, which reveals a noticable decline of forest area in central
+and Southern America as well as in India:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(rworldmap)}
+\KeywordTok{library}\NormalTok{(RColorBrewer)}
+\NormalTok{forest\_area\_map \textless{}{-}}\StringTok{ }\KeywordTok{joinCountryData2Map}\NormalTok{(forestarea\_}\DecValTok{2001}\NormalTok{, }\DataTypeTok{joinCode=}\StringTok{"ISO3"}\NormalTok{, }\DataTypeTok{nameJoinColumn =} \StringTok{"code"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 213 codes from your data successfully matched countries in the map
+## 40 codes from your data failed to match with a country code in the map
+## 30 codes from the map weren't represented in your data
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{colourPalette \textless{}{-}}\StringTok{ }\KeywordTok{brewer.pal}\NormalTok{(}\DecValTok{11}\NormalTok{, }\StringTok{"Greens"}\NormalTok{)}
+
+\KeywordTok{par}\NormalTok{(}\DataTypeTok{mai=}\KeywordTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{,}\DecValTok{0}\NormalTok{,}\FloatTok{0.2}\NormalTok{,}\DecValTok{0}\NormalTok{))}
+\NormalTok{mapForest \textless{}{-}}\StringTok{ }\KeywordTok{mapCountryData}\NormalTok{(forest\_area\_map,}
+               \DataTypeTok{nameColumnToPlot=}\StringTok{"forest\_area"}\NormalTok{,}
+               \DataTypeTok{mapTitle =} \StringTok{"Percent of Global Forest Area (2001)"}\NormalTok{,}
+               \DataTypeTok{catMethod =} \StringTok{"quantiles"}\NormalTok{,}
+               \DataTypeTok{colourPalette =}\NormalTok{ colourPalette,}
+               \DataTypeTok{oceanCol=}\StringTok{"lightblue"}\NormalTok{,}
+               \DataTypeTok{missingCountryCol=}\StringTok{"white"}\NormalTok{,}
+               \DataTypeTok{addLegend =} \OtherTok{FALSE}\NormalTok{,}
+               \DataTypeTok{lwd =} \DecValTok{1}\NormalTok{)}
+
+\KeywordTok{mtext}\NormalTok{(}\StringTok{"Source: Our World in Data | github: julia{-}tache | April 22nd, 2021"}\NormalTok{, }\DataTypeTok{side =} \DecValTok{1}\NormalTok{, }\DataTypeTok{line =} \DecValTok{{-}1}\NormalTok{)}
+\NormalTok{mapForest}\OperatorTok{$}\NormalTok{cutVector \textless{}{-}}\StringTok{ }\KeywordTok{round}\NormalTok{(mapForest}\OperatorTok{$}\NormalTok{cutVector, }\DataTypeTok{digits =} \DecValTok{4}\NormalTok{)}
+
+\KeywordTok{do.call}\NormalTok{(addMapLegendBoxes, }\KeywordTok{c}\NormalTok{(mapForest, }
+                             \DataTypeTok{x =} \StringTok{"top"}\NormalTok{, }
+                             \DataTypeTok{title =} \StringTok{"Change in Global Forest Area (in \%)"}\NormalTok{,}
+                             \DataTypeTok{cex =} \FloatTok{0.7}\NormalTok{,}
+                             \DataTypeTok{pt.cex =} \DecValTok{1}\NormalTok{,}
+                             \DataTypeTok{horiz =} \OtherTok{TRUE}\NormalTok{,}
+                             \DataTypeTok{bg =} \OtherTok{NA}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Tidy-Tuesday---Week-15--2021-_files/figure-latex/unnamed-chunk-3-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{forest\_area\_map \textless{}{-}}\StringTok{ }\KeywordTok{joinCountryData2Map}\NormalTok{(forestarea\_}\DecValTok{2020}\NormalTok{, }\DataTypeTok{joinCode=}\StringTok{"ISO3"}\NormalTok{, }\DataTypeTok{nameJoinColumn =} \StringTok{"code"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## 218 codes from your data successfully matched countries in the map
+## 42 codes from your data failed to match with a country code in the map
+## 25 codes from the map weren't represented in your data
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{colourPalette \textless{}{-}}\StringTok{ }\KeywordTok{brewer.pal}\NormalTok{(}\DecValTok{11}\NormalTok{, }\StringTok{"Greens"}\NormalTok{)}
+
+\KeywordTok{par}\NormalTok{(}\DataTypeTok{mai=}\KeywordTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{,}\DecValTok{0}\NormalTok{,}\FloatTok{0.2}\NormalTok{,}\DecValTok{0}\NormalTok{))}
+\NormalTok{mapForest \textless{}{-}}\StringTok{ }\KeywordTok{mapCountryData}\NormalTok{(forest\_area\_map,}
+               \DataTypeTok{nameColumnToPlot=}\StringTok{"forest\_area"}\NormalTok{,}
+               \DataTypeTok{mapTitle =} \StringTok{"Percent of global forest area (2020)"}\NormalTok{,}
+               \DataTypeTok{catMethod =} \StringTok{"logFixedWidth"}\NormalTok{,}
+               \DataTypeTok{colourPalette =}\NormalTok{ colourPalette,}
+               \DataTypeTok{oceanCol=}\StringTok{"lightblue"}\NormalTok{,}
+               \DataTypeTok{missingCountryCol=}\StringTok{"white"}\NormalTok{,}
+               \DataTypeTok{addLegend =} \OtherTok{FALSE}\NormalTok{,}
+               \DataTypeTok{lwd =} \DecValTok{1}\NormalTok{)}
+
+\KeywordTok{mtext}\NormalTok{(}\StringTok{"Source: Our World in Data | github: julia{-}tache | April 22nd, 2021"}\NormalTok{, }\DataTypeTok{side =} \DecValTok{1}\NormalTok{, }\DataTypeTok{line =} \DecValTok{{-}1}\NormalTok{)}
+\NormalTok{mapForest}\OperatorTok{$}\NormalTok{cutVector \textless{}{-}}\StringTok{ }\KeywordTok{round}\NormalTok{(mapForest}\OperatorTok{$}\NormalTok{cutVector, }\DataTypeTok{digits =} \DecValTok{4}\NormalTok{)}
+
+\KeywordTok{do.call}\NormalTok{(addMapLegendBoxes, }\KeywordTok{c}\NormalTok{(mapForest, }
+                             \DataTypeTok{x =} \StringTok{"top"}\NormalTok{, }
+                             \DataTypeTok{title =} \StringTok{"Change in Global Forest Area (in \%)"}\NormalTok{,}
+                             \DataTypeTok{cex =} \FloatTok{0.7}\NormalTok{,}
+                             \DataTypeTok{pt.cex =} \DecValTok{1}\NormalTok{,}
+                             \DataTypeTok{horiz =} \OtherTok{TRUE}\NormalTok{,}
+                             \DataTypeTok{bg =} \OtherTok{NA}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Tidy-Tuesday---Week-15--2021-_files/figure-latex/unnamed-chunk-4-1.pdf}
+
+Next, I created a tile graph on the different causes of deforestation in
+Brazil. Huge shout out to Adrian Perez (@jesadrperez on Github) for the
+base of this code:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\KeywordTok{library}\NormalTok{(scales)}
+\NormalTok{loss\_long \textless{}{-}}\StringTok{ }\NormalTok{brazil\_loss }\OperatorTok{\%\textgreater{}\%}\StringTok{ }
+\StringTok{  }\KeywordTok{select}\NormalTok{(year, commercial\_crops, flooding\_due\_to\_dams, natural\_disturbances, selective\_logging, }
+\NormalTok{         fire, mining, other\_infrastructure, roads, tree\_plantations\_including\_palm, small\_scale\_clearing) }\OperatorTok{\%\textgreater{}\%}
+\StringTok{  }\KeywordTok{pivot\_longer}\NormalTok{(}\DataTypeTok{cols =} \KeywordTok{c}\NormalTok{(}\StringTok{"commercial\_crops"}\NormalTok{, }\StringTok{"flooding\_due\_to\_dams"}\NormalTok{, }\StringTok{"natural\_disturbances"}\NormalTok{, }
+                        \StringTok{"selective\_logging"}\NormalTok{, }\StringTok{"fire"}\NormalTok{, }\StringTok{"mining"}\NormalTok{, }\StringTok{"other\_infrastructure"}\NormalTok{, }\StringTok{"roads"}\NormalTok{, }
+                        \StringTok{"tree\_plantations\_including\_palm"}\NormalTok{, }\StringTok{"small\_scale\_clearing"}\NormalTok{), }
+               \DataTypeTok{names\_to =} \StringTok{"reason"}\NormalTok{, }
+               \DataTypeTok{values\_to =} \StringTok{"count"}\NormalTok{) }\OperatorTok{\%\textgreater{}\%}
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{count =}\NormalTok{ count}\OperatorTok{/}\DecValTok{1000}\NormalTok{) }\OperatorTok{\%\textgreater{}\%}
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{reason =} \KeywordTok{str\_replace\_all}\NormalTok{(reason, }\StringTok{"\_"}\NormalTok{, }\StringTok{" "}\NormalTok{),}
+    \DataTypeTok{reason =} \KeywordTok{str\_to\_title}\NormalTok{(reason),}
+    \DataTypeTok{reason =} \KeywordTok{str\_replace}\NormalTok{(reason, }\StringTok{"Including Palm"}\NormalTok{, }\StringTok{"(Including Palm)"}\NormalTok{))}
+
+\KeywordTok{ggplot}\NormalTok{(loss\_long, }\KeywordTok{aes}\NormalTok{(year, reason, }\DataTypeTok{fill =}\NormalTok{ count)) }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{geom\_tile}\NormalTok{(}\DataTypeTok{color =} \StringTok{"white"}\NormalTok{, }\DataTypeTok{size =} \DecValTok{1}\NormalTok{) }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{scale\_fill\_distiller}\NormalTok{(}\DataTypeTok{direction =} \DecValTok{1}\NormalTok{, }\DataTypeTok{palette =} \StringTok{"Greens"}\NormalTok{, }\DataTypeTok{labels =} \KeywordTok{number\_format}\NormalTok{()) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{scale\_x\_continuous}\NormalTok{(}\DataTypeTok{expand =} \KeywordTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{,}\DecValTok{0}\NormalTok{), }\DataTypeTok{position =} \StringTok{"bottom"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{title =} \StringTok{"Deforestation in Brazil"}\NormalTok{,}
+    \DataTypeTok{subtitle =} \KeywordTok{str\_wrap}\NormalTok{(}
+      \StringTok{"Loss of Brazilian forest due to specific types of industry"}\NormalTok{, }\DecValTok{65}\NormalTok{),}
+    \DataTypeTok{fill =} \StringTok{"Acres (in thousands)"}\NormalTok{,}
+    \DataTypeTok{caption =} \StringTok{"Source: Our World in Data | github: julia{-}tache | April 22nd, 2021"}\NormalTok{,}
+    \DataTypeTok{x =} \OtherTok{NULL}\NormalTok{, }
+    \DataTypeTok{y =} \OtherTok{NULL}\NormalTok{) }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{text =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{size =} \DecValTok{8}\NormalTok{),}
+        \DataTypeTok{plot.title =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{size =} \KeywordTok{rel}\NormalTok{(}\FloatTok{2.5}\NormalTok{), }\DataTypeTok{face =} \StringTok{"bold"}\NormalTok{),}
+        \DataTypeTok{plot.subtitle =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{size =} \KeywordTok{rel}\NormalTok{(}\FloatTok{1.5}\NormalTok{)),}
+        \DataTypeTok{axis.title =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{size =} \KeywordTok{rel}\NormalTok{(}\FloatTok{1.5}\NormalTok{), }\DataTypeTok{hjust =} \DecValTok{0}\NormalTok{), }
+        \DataTypeTok{axis.title.y =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{angle =} \DecValTok{0}\NormalTok{),}
+        \DataTypeTok{legend.title =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{size =} \KeywordTok{rel}\NormalTok{(}\FloatTok{1.5}\NormalTok{), }\DataTypeTok{vjust =} \FloatTok{0.75}\NormalTok{),}
+        \DataTypeTok{plot.caption =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{size =} \KeywordTok{rel}\NormalTok{(}\DecValTok{1}\NormalTok{), }\DataTypeTok{hjust =} \DecValTok{0}\NormalTok{),}
+        \DataTypeTok{axis.text =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{size =} \KeywordTok{rel}\NormalTok{(}\FloatTok{1.25}\NormalTok{)),}
+        \DataTypeTok{legend.text =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{size =} \KeywordTok{rel}\NormalTok{(}\FloatTok{0.75}\NormalTok{)),}
+        
+        \DataTypeTok{plot.title.position =} \StringTok{"plot"}\NormalTok{,}
+        \DataTypeTok{plot.caption.position =} \StringTok{"plot"}\NormalTok{,}
+  
+        \DataTypeTok{legend.position =} \StringTok{"top"}\NormalTok{,}
+        \DataTypeTok{legend.justification =} \KeywordTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{0}\NormalTok{),}
+    
+        \DataTypeTok{axis.ticks =} \KeywordTok{element\_blank}\NormalTok{(),}
+        \DataTypeTok{panel.grid =} \KeywordTok{element\_blank}\NormalTok{(),}
+    
+        \DataTypeTok{rect =} \KeywordTok{element\_blank}\NormalTok{(),}
+        \DataTypeTok{plot.background =} \KeywordTok{element\_rect}\NormalTok{(}\DataTypeTok{fill =} \StringTok{"white"}\NormalTok{, }\DataTypeTok{color =} \StringTok{"white"}\NormalTok{),}
+        \DataTypeTok{legend.background =} \KeywordTok{element\_rect}\NormalTok{(}\DataTypeTok{fill =} \StringTok{"white"}\NormalTok{, }\DataTypeTok{color =} \StringTok{"white"}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Tidy-Tuesday---Week-15--2021-_files/figure-latex/unnamed-chunk-5-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{loss\_long\_pasture \textless{}{-}}\StringTok{ }\NormalTok{brazil\_loss }\OperatorTok{\%\textgreater{}\%}\StringTok{ }
+\StringTok{  }\KeywordTok{select}\NormalTok{(year, pasture, commercial\_crops, small\_scale\_clearing, fire) }\OperatorTok{\%\textgreater{}\%}
+\StringTok{  }\KeywordTok{pivot\_longer}\NormalTok{(}\DataTypeTok{cols =} \KeywordTok{c}\NormalTok{(}\StringTok{"pasture"}\NormalTok{, }\StringTok{"commercial\_crops"}\NormalTok{, }\StringTok{"small\_scale\_clearing"}\NormalTok{, }\StringTok{"fire"}\NormalTok{), }
+               \DataTypeTok{names\_to =} \StringTok{"reason"}\NormalTok{, }
+               \DataTypeTok{values\_to =} \StringTok{"count"}\NormalTok{) }\OperatorTok{\%\textgreater{}\%}
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{count =}\NormalTok{ count}\OperatorTok{/}\DecValTok{1000}\NormalTok{) }\OperatorTok{\%\textgreater{}\%}
+\StringTok{  }\KeywordTok{mutate}\NormalTok{(}\DataTypeTok{reason =} \KeywordTok{str\_to\_title}\NormalTok{(reason),}
+         \DataTypeTok{reason =} \KeywordTok{str\_replace\_all}\NormalTok{(reason, }\StringTok{"\_"}\NormalTok{, }\StringTok{" "}\NormalTok{))}
+
+\KeywordTok{ggplot}\NormalTok{(loss\_long\_pasture, }\KeywordTok{aes}\NormalTok{(year, reason, }\DataTypeTok{fill =}\NormalTok{ count)) }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{geom\_tile}\NormalTok{(}\DataTypeTok{color =} \StringTok{"white"}\NormalTok{, }\DataTypeTok{size =} \DecValTok{1}\NormalTok{) }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{scale\_fill\_distiller}\NormalTok{(}\DataTypeTok{direction =} \DecValTok{1}\NormalTok{, }\DataTypeTok{palette =} \StringTok{"Greens"}\NormalTok{, }\DataTypeTok{labels =} \KeywordTok{number\_format}\NormalTok{()) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{scale\_x\_continuous}\NormalTok{(}\DataTypeTok{expand =} \KeywordTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{,}\DecValTok{0}\NormalTok{), }\DataTypeTok{position =} \StringTok{"bottom"}\NormalTok{) }\OperatorTok{+}
+\StringTok{  }\KeywordTok{labs}\NormalTok{(}\DataTypeTok{title =} \StringTok{"Deforestation in Brazil due to Pastures"}\NormalTok{,}
+    \DataTypeTok{subtitle =} \StringTok{"Clearing pasture for livestock overwhelmingly affects forest usage"}\NormalTok{,}
+    \DataTypeTok{fill =} \StringTok{"Acres (in thousands)"}\NormalTok{,}
+    \DataTypeTok{caption =} \StringTok{"Source: Our World in Data | github: julia{-}tache | April 22nd, 2021"}\NormalTok{,}
+    \DataTypeTok{x =} \OtherTok{NULL}\NormalTok{, }
+    \DataTypeTok{y =} \OtherTok{NULL}\NormalTok{) }\OperatorTok{+}\StringTok{ }
+\StringTok{  }\KeywordTok{theme}\NormalTok{(}\DataTypeTok{text =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{size =} \DecValTok{8}\NormalTok{),}
+        \DataTypeTok{plot.title =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{size =} \KeywordTok{rel}\NormalTok{(}\FloatTok{2.5}\NormalTok{), }\DataTypeTok{face =} \StringTok{"bold"}\NormalTok{),}
+        \DataTypeTok{plot.subtitle =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{size =} \KeywordTok{rel}\NormalTok{(}\FloatTok{1.5}\NormalTok{)),}
+        \DataTypeTok{axis.title =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{size =} \KeywordTok{rel}\NormalTok{(}\FloatTok{1.5}\NormalTok{), }\DataTypeTok{hjust =} \DecValTok{0}\NormalTok{), }
+        \DataTypeTok{axis.title.y =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{angle =} \DecValTok{0}\NormalTok{),}
+        \DataTypeTok{legend.title =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{size =} \KeywordTok{rel}\NormalTok{(}\FloatTok{1.5}\NormalTok{), }\DataTypeTok{vjust =} \FloatTok{0.75}\NormalTok{),}
+        \DataTypeTok{plot.caption =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{size =} \KeywordTok{rel}\NormalTok{(}\DecValTok{1}\NormalTok{), }\DataTypeTok{hjust =} \DecValTok{0}\NormalTok{),}
+        \DataTypeTok{axis.text =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{size =} \KeywordTok{rel}\NormalTok{(}\FloatTok{1.25}\NormalTok{)),}
+        \DataTypeTok{legend.text =} \KeywordTok{element\_text}\NormalTok{(}\DataTypeTok{size =} \KeywordTok{rel}\NormalTok{(}\FloatTok{0.75}\NormalTok{)),}
+        
+        \DataTypeTok{plot.title.position =} \StringTok{"plot"}\NormalTok{,}
+        \DataTypeTok{plot.caption.position =} \StringTok{"plot"}\NormalTok{,}
+  
+        \DataTypeTok{legend.position =} \StringTok{"top"}\NormalTok{,}
+        \DataTypeTok{legend.justification =} \KeywordTok{c}\NormalTok{(}\DecValTok{0}\NormalTok{, }\DecValTok{0}\NormalTok{),}
+    
+        \DataTypeTok{axis.ticks =} \KeywordTok{element\_blank}\NormalTok{(),}
+        \DataTypeTok{panel.grid =} \KeywordTok{element\_blank}\NormalTok{(),}
+    
+        \DataTypeTok{rect =} \KeywordTok{element\_blank}\NormalTok{(),}
+        \DataTypeTok{plot.background =} \KeywordTok{element\_rect}\NormalTok{(}\DataTypeTok{fill =} \StringTok{"white"}\NormalTok{, }\DataTypeTok{color =} \StringTok{"white"}\NormalTok{),}
+        \DataTypeTok{legend.background =} \KeywordTok{element\_rect}\NormalTok{(}\DataTypeTok{fill =} \StringTok{"white"}\NormalTok{, }\DataTypeTok{color =} \StringTok{"white"}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Tidy-Tuesday---Week-15--2021-_files/figure-latex/unnamed-chunk-6-1.pdf}
+
+I had to create a separate chart showing forest cleared for cattle
+pastures because of how high the numbers were compared to other
+industries. If we want to conserve our forests, we need to continue to
+make less waste, recycle, and adopt more plant-based foods as regular
+parts of our diet.
+
+\end{document}
