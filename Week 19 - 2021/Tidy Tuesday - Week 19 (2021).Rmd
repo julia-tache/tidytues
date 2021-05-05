@@ -1,0 +1,62 @@
+---
+title: "Tidy Tuesday - Week 19 (2021)"
+author: "Julia Tache"
+date: "05/04/2021"
+header-includes:
+   - \usepackage{dcolumn}
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default 
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+For this week, I created a global map with clusters and pop-up markers that illustrate water sources reported upon in 2007, the year in the dataset with the most reports. Clusters reveal most wells in the data are in West and East Africa. Pop ups provide the well status (functional and in-use, etc.), who installed the water source, the facility type, and the report date. Colors of different markers signify different sources of water, which are also labeled as such. The leaflet map below is completely interactive. 
+
+```{r load data}
+library(tidyverse)
+
+tuesdata <- tidytuesdayR::tt_load('2021-05-04')
+water <- tuesdata$water
+```
+
+```{r}
+water <- water %>%
+  rename("lat" = "lat_deg") %>%
+  rename("long" = "lon_deg") %>% 
+  drop_na(water_source)
+
+water_2007 <- water %>%
+  filter(install_year == 2007) # year with most installations 
+```
+
+```{r}
+library(leaflet)
+library(fontawesome)
+
+water_2007$water_source <- factor(water_2007$water_source)
+pal <- c("beige", "green", "darkgreen", "blue", "darkblue", "lightblue", "purple", "cadetblue", "white", "gray", "lightgray")
+water_2007$color_pal <- factor(water_2007$water_source, levels = levels(water_2007$water_source), labels = pal)
+
+icons <- awesomeIcons(
+  text = fa("hand-holding-water"),
+  iconColor = "black",
+  markerColor = water_2007$color_pal
+)
+
+popups <- sprintf(
+  "<strong>Well Status: %s</strong><br/>Installer: %s<br/>Facility Type: %s<br/>Report Date: %s",
+  water_2007$status, water_2007$installer, water_2007$facility_type, water_2007$report_date
+) %>% lapply(htmltools::HTML)
+```
+
+```{r}
+leaflet(water_2007) %>% 
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addAwesomeMarkers(icon = icons, label = ~as.character(water_source), popup = popups, clusterOptions = markerClusterOptions())
+```
+
