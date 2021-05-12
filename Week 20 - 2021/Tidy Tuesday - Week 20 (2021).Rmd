@@ -1,0 +1,88 @@
+---
+title: "Tidy Tuesday - Week 20 (2021)"
+author: "Julia Tache"
+date: "05/04/2021"
+header-includes:
+   - \usepackage{dcolumn}
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default 
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+library(tidyverse)
+
+tuesdata <- tidytuesdayR::tt_load("2021-05-11")
+broadband <- tuesdata$broadband
+broadband_zip <- tuesdata$broadband_zip
+```
+
+```{r take a look at data}
+head(broadband)
+head(broadband_zip)
+```
+
+```{r nationwide map}
+library(zipcodeR)
+library(tigris)
+library(censusr)
+library(leaflet)
+
+broadband_zip <- broadband_zip %>%
+  rename("zipcode" = "POSTAL CODE")
+
+broadband_zip$zipcode <- as.character(broadband_zip$zipcode)
+
+broadband_zip <- sample_n(broadband_zip, 10000)
+
+char_zips <- zctas(cb = TRUE)
+
+char_zips <- geo_join(char_zips, 
+                      broadband_zip, 
+                      by_sp = "GEOID10", 
+                      by_df = "zipcode",
+                      how = "left")
+
+
+
+pal <- colorNumeric(
+  palette = "Greens",
+  domain = char_zips$`BROADBAND USAGE`)
+
+labels <- paste0("Zip Code: ", char_zips$GEOID10, "<br/>",
+    "Broadband Usage: ", char_zips$`BROADBAND USAGE`) %>%
+  lapply(htmltools::HTML)
+```
+
+```{r map}
+char_zips %>% 
+  leaflet %>% 
+  addProviderTiles("CartoDB") %>% 
+  addPolygons(fillColor = ~pal(`BROADBAND USAGE`),
+              weight = 2,
+              opacity = 1,
+              color = "white",
+              dashArray = "3",
+              fillOpacity = 0.7,
+              highlight = highlightOptions(weight = 2,
+                                           color = "#666",
+                                           dashArray = "",
+                                           fillOpacity = 0.7,
+                                           bringToFront = TRUE),
+              label = labels) %>%
+  # add legend
+  addLegend(pal = pal, 
+            values = ~`BROADBAND USAGE`, 
+            opacity = 0.7, 
+            title = htmltools::HTML("Broadband Usage <br> 
+                                    by Zip Code <br>
+                                    2016"),
+            position = "bottomright")
+```
+
