@@ -1,7 +1,7 @@
 ---
 title: "Tidy Tuesday - Week 20 (2021)"
 author: "Julia Tache"
-date: "05/04/2021"
+date: "05/11/2021"
 header-includes:
    - \usepackage{dcolumn}
 output:
@@ -23,10 +23,57 @@ broadband <- tuesdata$broadband
 broadband_zip <- tuesdata$broadband_zip
 ```
 
-```{r take a look at data}
+```{r take a look at data, include=FALSE}
 head(broadband)
 head(broadband_zip)
+
+nrow(broadband)
+nrow(broadband_zip)
 ```
+
+
+```{r clean data for mapping}
+broadband_zip <- broadband_zip %>% 
+  drop_na(`BROADBAND USAGE`) %>%
+  drop_na(`POSTAL CODE`)
+
+broadband_st <- broadband %>% 
+  group_by(ST) %>%
+  summarize(mean_fcc = mean(as.numeric(`BROADBAND AVAILABILITY PER FCC`), na.rm = TRUE))
+
+head(broadband_st)
+head(broadband_zip)
+
+nrow(broadband_zip)
+```
+
+```{r map of broadband availability by state}
+
+library(tigris)
+library(leaflet)
+
+states <- states(cb = T)
+states_merged <- geo_join(states, broadband_st, "STUSPS", "ST")
+pal <- colorNumeric("Greens", domain = states_merged$mean_fcc)
+
+popup <- paste0("Average Broadband Availability (FCC): ", 
+                as.character(round(states_merged$mean_fcc, digits = 4) * 100), "%")
+
+leaflet() %>%
+  addProviderTiles("CartoDB.Positron") %>%
+  setView(-98.483330, 38.712046, zoom = 4) %>% 
+  addPolygons(data = states_merged, 
+              fillColor = ~pal(states_merged$mean_fcc), 
+              fillOpacity = 0.7, 
+              weight = 0.2, 
+              smoothFactor = 0.2, 
+              popup = ~popup) %>%
+  addLegend(pal = pal, 
+            values = states_merged$mean_fcc, 
+            position = "bottomright", 
+            title = "% access to fixed terrestrial broadband")
+```
+
 
 ```{r nationwide map}
 library(zipcodeR)
@@ -34,12 +81,14 @@ library(tigris)
 library(censusr)
 library(leaflet)
 
+options(tigris_use_cache = TRUE)
+
 broadband_zip <- broadband_zip %>%
   rename("zipcode" = "POSTAL CODE")
 
 broadband_zip$zipcode <- as.character(broadband_zip$zipcode)
 
-broadband_zip <- sample_n(broadband_zip, 10000)
+# broadband_zip <- sample_n(broadband_zip, 10000)
 
 char_zips <- zctas(cb = TRUE)
 
@@ -48,8 +97,6 @@ char_zips <- geo_join(char_zips,
                       by_sp = "GEOID10", 
                       by_df = "zipcode",
                       how = "left")
-
-
 
 pal <- colorNumeric(
   palette = "Greens",

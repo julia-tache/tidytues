@@ -1,0 +1,23 @@
+---
+title: "Tidy Tuesday - Week 23"
+author: "Julia Tache"
+date: "06/01/2021"
+header-includes:
+   - \usepackage{dcolumn}
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default 
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+library(tidyverse)
+
+tuesdata <- tidytuesdayR::tt_load(2021, week = 23)
+viewers <- tuesdata$viewers 
+```
