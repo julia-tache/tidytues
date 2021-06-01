@@ -17,7 +17,42 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 
 ```{r load data}
 library(tidyverse)
+library(tidytuesdayR)
 
-tuesdata <- tidytuesdayR::tt_load(2021, week = 23)
-viewers <- tuesdata$viewers 
+castaways <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-06-01/castaways.csv')
+
+viewers <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-06-01/viewers.csv')
 ```
+
+```{r convert to datetime objects}
+library(zoo)
+
+viewers$episode_mmyyyy <- str_extract(viewers$episode_date, "\\d{4}-\\d{2}")
+viewers$episode_mmyyyy <- paste0(str_extract(viewers$episode_mmyyyy, "\\d{4}"), "-", 
+                                 str_extract(viewers$episode_mmyyyy, "\\d{2}$"))
+viewers$episode_mmyyyy <- as.yearmon(viewers$episode_mmyyyy)
+
+viewers$season_type <- ifelse(("Survivor: All-Stars" == viewers$season_name | "Survivor: Winners at War" == viewers$season_name | "Survivor: Blood vs. Water" == viewers$season_name | "Survivor: Edge of Extinction" == viewers$season_name | "Survivor: Heroes vs. Healers vs. Hustlers" == viewers$season_name | "Survivor: Island of the Idols" == viewers$season_name | "Survivor: Millennials vs. Gen X" == viewers$season_name | "Survivor: One World" == viewers$season_name | "Survivor: David vs. Goliath" == viewers$season_name | "Survivor: Game Changers" == viewers$season_name | "Survivor: Heroes vs. Villains" == viewers$season_name | "Survivor: Redemption Island" == viewers$season_name | "Survivor: Worlds Apart" == viewers$season_name),
+       "Special Season", "Regular Season")
+```
+
+```{r line graph}
+library(hrbrthemes)
+library(viridis)
+
+graph_month <- viewers %>%
+  group_by(episode_mmyyyy, season_type) %>%
+  summarize(avg_monthly_viewers = mean(viewers))
+
+ggplot(graph_month, 
+       aes(episode_mmyyyy, avg_monthly_viewers, group = season_type, color = season_type)) + 
+  geom_line() +
+  scale_color_viridis(discrete = TRUE) + 
+  ggtitle("Average Survivor monthly views") +
+  theme_ipsum() + 
+  xlab("Viewers (in millions)") + 
+  ylab("Episode Date")
+
+```
+
+
