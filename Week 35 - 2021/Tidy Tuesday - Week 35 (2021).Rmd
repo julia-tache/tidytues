@@ -1,0 +1,142 @@
+---
+title: "Tidy Tuesday - Week 35"
+author: "Julia Tache"
+date: "8/24/2021"
+header-includes:
+   - \usepackage{dcolumn}
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default 
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+library(tidyverse)
+library(tidytuesdayR)
+
+lemurs <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-08-24/lemur_data.csv')
+```
+
+```{r line graph}
+lemurs$year <- substr(lemurs$dob, 1, 4)
+lemurs_b2016 <- lemurs %>% filter(year < 2016) %>%
+  filter(year > 1946) # lemurs born before 2016 and after 1946 (big gap in data)
+
+lemurs_b2016$year <- as.numeric(lemurs_b2016$year)
+
+library(reshape)
+
+lemurs_long <- melt(data = as.data.frame(lemurs_b2016),
+     id.vars = "year",
+     measure.vars = "n_known_offspring")
+
+lemurs_long <- as.data.frame(lemurs_long)
+lemurs_long$number <- lemurs_long$value
+
+summary <- lemurs_b2016 %>%
+  group_by(year) %>% 
+  summarize(median = median(n_known_offspring, na.rm = TRUE), 
+            max = max(n_known_offspring, na.rm = TRUE), 
+            min = min(n_known_offspring, na.rm = TRUE))
+
+summary_long <- melt(data = as.data.frame(summary),
+     id.vars = "year",
+     measure.vars = c("min", "max"),
+     variable.name = "variable",
+     value.name = "values")
+
+spline_int <- as.data.frame(spline(summary$year, summary$median))
+
+ggplot(lemurs_long, aes(x = year, y = number)) +
+  geom_point(alpha = 0.5, color = "light gray") + 
+  geom_line(aes(group = year), color = "gray") +
+  geom_line(data = spline_int, aes(x = x, y = y), color = "red") + 
+  geom_point(data = summary, aes(year, median), color = "red") +
+  annotate(geom = "text", x = summary_long$year[1], y = (summary_long$value[59] + 2), 
+           label = "Max", 
+           color = "black",
+           size = 3) + 
+  annotate(geom = "text", x = summary_long$year[1], y = (summary_long$value[1] - 2), 
+           label = "Min", 
+           color = "black",
+           size = 3) +
+  annotate(geom = "text", x = summary_long$year[8], y = (summary$median[8] + 2), 
+           label = "Median", 
+           color = "red",
+           size = 3) +
+  ggtitle("Lemur Offspring Over Time") +
+  theme_minimal() + 
+  ylim(-5, 40) +
+  xlab("Year") + 
+  theme(plot.title = element_text(face = "bold"),
+        plot.subtitle = element_text(face = "italic"),
+        axis.title.y = element_blank(),
+        plot.background = element_rect(fill = "#E5FFFD"),
+        panel.grid.major = element_line(size = 1, linetype = "solid",
+                                colour = "white"), 
+        panel.grid.minor = element_line(size = 0.5, linetype = "dashed",
+                                colour = "white")) + 
+  labs(caption = "Source: Kaggle | github: julia-tache | August 24th, 2021",
+       subtitle = "Lemurs are the most threatened group of mammals on the planet, and 95% of lemur species are at risk \nof extinction. The Duke Lemur Center houses over 200 lemurs across 14 species – the most diverse \npopulation of lemurs on Earth, outside their native Madagascar.") 
+
+ggsave("line_graph.png")
+```
+
+```{r bar graph}
+summary_weight <- lemurs_b2016 %>%
+  group_by(taxon, sex) %>% 
+  summarize(average_weight = mean(weight_g, na.rm = TRUE))
+
+summary_weight <- summary_weight[!(summary_weight$sex=="ND"), ]
+
+taxon <- read_csv("lemur_taxon.csv") # common names
+
+summary_weight <- left_join(taxon, summary_weight)
+
+summary_weight <- na.omit(summary_weight)
+
+my_plot <- ggplot(summary_weight, aes(x = reorder(common_name, average_weight), y = average_weight)) +
+  geom_bar(stat = "identity") + 
+  coord_flip() + 
+  facet_wrap(~sex) +
+  ggtitle("Average Lemur Weight by Taxonomy") +
+  theme_minimal() + 
+  ylab("Weight (in grams)") + 
+  theme(plot.title = element_text(face = "bold"),
+        plot.subtitle = element_text(face = "italic"),
+        axis.title.y = element_blank(),
+        plot.background = element_rect(fill = "#f7f7f7"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) + 
+  labs(caption = "Source: Kaggle | github: julia-tache | August 24th, 2021",
+       subtitle = "The largest females are black-and-white ruffed lemurs and the largest \nmales are the red ruffed lemurs") 
+
+require(grid); require(png); require(RCurl)
+
+img1 <- readPNG("black_white_lemur.png")
+img2 <- readPNG("red_lemur.png")
+
+annotation_custom2 <- 
+  function (grob, xmin = -Inf, xmax = Inf, ymin = -Inf, ymax = Inf, data){ layer(data = data, stat = StatIdentity, position =
+                                                                                   PositionIdentity, 
+                                                                                 geom = ggplot2:::GeomCustomAnn,
+                                                                                 inherit.aes = TRUE, 
+                                                                                 params = list(grob = grob, 
+                                                                                               xmin = xmin, 
+                                                                                               xmax = xmax, 
+                                                                                               ymin = ymin, 
+                                                                                               ymax = ymax))}
+
+a1 = annotation_custom2(rasterGrob(img1, interpolate=TRUE), xmin=0, xmax=8, ymin=750, ymax=3500, data = summary_weight[1,])
+a2 = annotation_custom2(rasterGrob(img2, interpolate=TRUE), xmin=0, xmax=8, ymin=750, ymax=3500, data = summary_weight[52,])
+
+my_plot + a1 + a2
+
+ggsave("bar_graph.png")
+```
+
