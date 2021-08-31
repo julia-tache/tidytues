@@ -1,0 +1,134 @@
+---
+title: "Tidy Tuesday - Week 36"
+author: "Julia Tache"
+date: "8/31/2021"
+header-includes:
+   - \usepackage{dcolumn}
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default 
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+Code Inspiration: https://www.r-graph-gallery.com/web-circular-barplot-with-R-and-ggplot2.html
+
+```{r load data}
+library(tidyverse)
+library(tidytuesdayR)
+
+bird_baths <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-08-31/bird_baths.csv')
+```
+
+```{r clean data - top 10 birds by urban/rural areas}
+rural <- bird_baths %>%
+  group_by(bird_type, urban_rural) %>%
+  summarize(total_birds = sum(bird_count)) %>%
+  filter(urban_rural == "Rural") %>%
+  arrange(-total_birds)
+
+urban <- bird_baths %>%
+  group_by(bird_type, urban_rural) %>%
+  summarize(total_birds = sum(bird_count)) %>%
+  filter(urban_rural == "Urban") %>%
+  arrange(-total_birds)
+
+rural_top10 <- rural[1:10, ]
+urban_top10 <- urban[1:10, ]
+```
+
+```{r circular bar graph (rural)}
+library(png)
+library(patchwork) 
+
+img1 <- readPNG("superb_fairy_wren.png", native = TRUE)
+
+plt <- ggplot(rural_top10) +
+  geom_hline(aes(yintercept = y), data.frame(y = c(0:5) * 20), color = "lightgrey") +
+  geom_col(aes(x = reorder(str_wrap(bird_type, 5), total_birds), y = total_birds, fill = total_birds), 
+           position = "dodge2", show.legend = TRUE, alpha = 1) +
+  geom_point(aes(x = reorder(str_wrap(bird_type, 5), total_birds), y = total_birds), size = 3, color = "gray12") +
+  geom_segment(aes(x = reorder(str_wrap(bird_type, 5), total_birds), y = 0, 
+                   xend = reorder(str_wrap(bird_type, 5), total_birds), yend = 100), 
+               linetype = "dashed", color = "gray12") +
+  coord_polar(clip = "off") + 
+  scale_y_continuous(limits = c(-50, 125), expand = c(0, 0), breaks = c(0, 40, 80, 120)) + 
+  scale_fill_gradientn("Number of Birds", colors = c("#F96574", "#FFD54D", "#99BE1B", "#00755E")) +
+  guides(fill = guide_colorbar(barwidth = 15, barheight = .5, title.position = "top", title.hjust = 0.5)) +
+  theme(axis.title = element_blank(), 
+        axis.ticks = element_blank(), 
+        axis.text.y = element_blank(),
+        axis.text.x = element_text(color = "gray12", size = 6, vjust = 1, hjust = 1),
+        legend.position = "bottom",
+        legend.text = element_text(size = 7)) +
+    labs(title = "Most Common Birds in Australian\nBird Baths (Rural)",
+      caption = "Source: Cleary et al, 2016 | github: julia-tache | August 24th, 2021") 
+
+library(sysfonts)
+font_add_google("Libre Caslon Text")
+
+plt <- plt + theme(text = element_text(color = "gray12", family = "Libre Caslon Text"),
+            plot.title = element_text(face = "bold", size = 12, hjust = 0.5),
+            plot.caption = element_text(size = 8, hjust = 0.5),
+            panel.background = element_rect(fill = "white", color = "white"),
+            panel.grid = element_blank(),
+            panel.grid.major.x = element_blank()) +
+  inset_element(p = img1,
+                left = 0.42,
+                bottom = 0.42,
+                right = 0.58,
+                top = 0.58)
+
+plt 
+
+ggsave("rural_birds.png")
+```
+
+```{r circular bar graph (urban)}
+img2 <- readPNG("noisy_miner.png", native = TRUE)
+
+plt <- ggplot(urban_top10) +
+  geom_hline(aes(yintercept = y), data.frame(y = c(0:5) * 45), color = "lightgrey") +
+  geom_col(aes(x = reorder(str_wrap(bird_type, 5), total_birds), y = total_birds, fill = total_birds), 
+           position = "dodge2", show.legend = TRUE, alpha = 1) +
+  geom_point(aes(x = reorder(str_wrap(bird_type, 5), total_birds), y = total_birds), size = 3, color = "gray12") +
+  geom_segment(aes(x = reorder(str_wrap(bird_type, 5), total_birds), y = 0, 
+                   xend = reorder(str_wrap(bird_type, 5), total_birds), yend = 233), 
+               linetype = "dashed", color = "gray12") +
+  coord_polar(clip = "off") + 
+  scale_y_continuous(limits = c(-100, 240), expand = c(0, 0), breaks = c(0, 80, 160, 240)) + 
+  scale_fill_gradientn("Number of Birds", colors = c("#F96574", "#FFD54D", "#99BE1B", "#00755E")) +
+  guides(fill = guide_colorbar(barwidth = 15, barheight = .5, title.position = "top", title.hjust = 0.5)) +
+  theme(axis.title = element_blank(), 
+        axis.ticks = element_blank(), 
+        axis.text.y = element_blank(),
+        axis.text.x = element_text(color = "gray12", size = 6, vjust = 1, hjust = 1),
+        legend.position = "bottom",
+        legend.text = element_text(size = 7)) +
+    labs(title = "Most Common Birds in Australian\nBird Baths (Urban)",
+      caption = "Source: Cleary et al, 2016 | github: julia-tache | August 24th, 2021") 
+
+library(sysfonts)
+font_add_google("Libre Caslon Text")
+
+plt <- plt + theme(text = element_text(color = "gray12", family = "Libre Caslon Text"),
+            plot.title = element_text(face = "bold", size = 12, hjust = 0.5),
+            plot.caption = element_text(size = 8, hjust = 0.5),
+            panel.background = element_rect(fill = "white", color = "white"),
+            panel.grid = element_blank(),
+            panel.grid.major.x = element_blank()) +
+  inset_element(p = img2,
+                left = 0.42,
+                bottom = 0.42,
+                right = 0.58,
+                top = 0.58)
+
+plt
+
+ggsave("urban_birds.png")
+```
+
