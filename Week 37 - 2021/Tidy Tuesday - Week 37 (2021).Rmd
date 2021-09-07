@@ -1,0 +1,97 @@
+---
+title: "Tidy Tuesday - Week 37"
+author: "Julia Tache"
+date: "09/07/2021"
+header-includes:
+   - \usepackage{dcolumn}
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default 
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+library(tidyverse)
+library(tidytuesdayR)
+
+constructors <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-09-07/constructors.csv')
+races <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-09-07/races.csv')
+results <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2021/2021-09-07/results.csv')
+```
+
+```{r join results and constructors, filter data}
+joined_df <- left_join(results, constructors)
+joined_df <- left_join(joined_df, races, by = "raceId")
+
+df_18_19 <- joined_df %>%
+  filter(year == 2018 | year == 2019)
+
+df_18_19$fastestLapSpeed <- as.numeric(df_18_19$fastestLapSpeed)
+
+df_18_19 <- df_18_19 %>%
+  rename("carName" = "name.x") 
+
+df_18_19 <- df_18_19 %>%
+  filter(fastestLapTime != "\\N")
+
+df_18_19$fastestLapTime <- as.numeric(str_replace(substr(df_18_19$fastestLapTime, 1, 4), ":", "."))
+```
+
+```{r alluvial plot}
+library(reshape2)
+library(ggalluvial)
+
+df_18_19_graph <- df_18_19 %>%
+  select(carName, nationality, year, fastestLapTime)
+
+df_18_19_graph$year <- as.character(df_18_19_graph$year)
+df_18_19_graph$fastestLapTime <- round((df_18_19_graph$fastestLapTime*60), 0)
+df_18_19_graph$nationality <- as.factor(df_18_19_graph$nationality)
+
+df_18_19_graph <- df_18_19_graph %>%
+  distinct()
+
+df_18_19_graph <- dcast(df_18_19_graph, fastestLapTime + nationality + carName ~ year, value.var = "carName")
+
+df_18_19_graph$`2018` <- df_18_19_graph$`2018` %>%
+  replace_na("Unknown")
+df_18_19_graph$`2019` <- df_18_19_graph$`2019` %>%
+  replace_na("Unknown")
+
+library(sysfonts)
+font_add_google("Libre Caslon Text")
+
+library(png)
+library(ggpubr)
+img1 <- readPNG("flag.png", native = TRUE)
+
+ggplot(df_18_19_graph,
+       aes(y = fastestLapTime, axis1 = `2018`, axis2 = `2019`)) +
+  background_image(img1) +
+  geom_alluvium(aes(fill = nationality), width = 1/12, alpha = 1) +
+  geom_stratum(width = 1/12, fill = "white", color = "grey") +
+  geom_label(stat = "stratum", aes(label = after_stat(stratum))) +
+  scale_x_discrete(limits = c("2018", "2019"), expand = c(.05, .05)) +
+  scale_fill_brewer(type = "qual", palette = "Spectral") +
+  theme(axis.title.y=element_blank(),
+        axis.text.x = element_text(color = "gray12", size = 6, vjust = 1, hjust = 1),
+        legend.position = "bottom",
+        legend.text = element_text(size = 7),
+        text = element_text(color = "gray12", family = "Libre Caslon Text"),
+        plot.title = element_text(face = "bold", size = 12, hjust = 0.5),
+        plot.caption = element_text(size = 8, hjust = 0.5),
+        panel.background = element_rect(fill = "white", color = "white"),
+        panel.grid = element_blank(),
+        panel.grid.major.x = element_blank()) +
+    labs(title = "Top Lap Times (in seconds) 2018 vs. 2019",
+      caption = "Source: FiveThirtyEight | github: julia-tache | September 7th, 2021",
+      fill = "Nationality") 
+
+ggsave("top_lap_times.png")
+```
+
