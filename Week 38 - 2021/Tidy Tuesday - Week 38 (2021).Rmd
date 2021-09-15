@@ -1,0 +1,137 @@
+---
+title: "Tidy Tuesday - Week 38"
+author: "Julia Tache"
+date: "09/14/2021"
+header-includes:
+   - \usepackage{dcolumn}
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default 
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+library(tidyverse)
+library(tidytuesdayR)
+
+tuesdata <- tidytuesdayR::tt_load('2021-09-14')
+billboard <- tuesdata$billboard
+audio_features <- tuesdata$audio_features
+```
+
+```{r view data}
+head(billboard)
+head(audio_features)
+```
+```{r join and add decade vector}
+joined_df <- left_join(billboard, audio_features, by = "song_id")
+
+joined_df$year <- str_sub(joined_df$week_id, - 4, - 1)
+joined_df$decade <- str_sub(joined_df$week_id, - 4, - 2)
+joined_df$decade <- paste0(joined_df$decade, "0s")
+```
+
+```{r convert data to long for graphing}
+library(reshape2)
+
+df_long <- melt(joined_df, id.vars = c("song.x", "song_id", "performer.x", "decade", "year",  
+                                       "tempo", "loudness", "spotify_track_popularity", "peak_position"), 
+                measure.vars = c("danceability", "energy", "speechiness", 
+                                 "acousticness", "instrumentalness", "valence"))
+
+df_long_top_10s <- df_long %>%
+  filter(decade == "2010s") %>%
+  filter(peak_position == 1) # top tracks
+
+df_long_top_10s <- df_long_top_10s %>% # reduce repetition
+  distinct()
+
+df_long_bottom_10s <- df_long %>%
+  filter(decade == "2010s") %>%
+  filter(peak_position == 100) # bottom tracks
+
+df_long_bottom_10s <- df_long_bottom_10s %>%
+  distinct()
+```
+
+```{r songs ranked on Spotify}
+top_songs <- df_long_top_10s[order(df_long_top_10s$spotify_track_popularity), ] %>%
+  distinct(song.x, performer.x)
+
+bottom_songs <- df_long_bottom_10s[order(-df_long_bottom_10s$spotify_track_popularity), ] %>%
+  distinct(song.x, performer.x)
+
+top_10 <- top_songs[1:10, ]
+bottom_10 <- bottom_songs[1:10, ]
+
+top_10 <- paste(paste0(top_10$song.x, " - ", top_10$performer.x), collapse = ", ")
+bottom_10 <- paste(paste0(bottom_10$song.x, " - ", bottom_10$performer.x), collapse=", ")
+``` 
+
+```{r warming stripes plot (top songs)}
+library(RColorBrewer)
+library(ggpubr)
+
+# Source: https://dominicroye.github.io/en/2018/how-to-create-warming-stripes-in-r/
+
+theme_strip <- theme_minimal() +
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.line.y = element_blank(),
+        axis.title = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 14, face = "bold"))
+
+
+col_strip <- brewer.pal(11, "Spectral")
+
+plot1 <- ggplot(df_long_top_10s, aes(x = song_id, y = 1, fill = value)) +
+  geom_tile() +
+  facet_wrap(~ variable) +
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_fill_gradientn(colors = rev(col_strip)) +
+  guides(fill = guide_colorbar(barwidth = 1)) +
+  labs(title = "Audio Features of #1 Songs (Billboard 100, 2010s)",
+       caption = "Source: Data.World | github: julia-tache | September 14th, 2021",
+       fill = "Value") +
+  theme_strip
+
+# Text plot
+text.p <- ggparagraph(paste("Top 10 Songs (based on Spotify track popularity): ", top_10), face = "bold", size = 8)
+
+# Arrange the plots on the same page
+ggarrange(plot1, text.p,
+          ncol = 1, nrow = 2,
+          heights = c(1, 0.3))
+
+ggsave("top_songs.png")
+```
+
+```{r warming stripes plot (bottom songs)}
+plot2 <- ggplot(df_long_bottom_10s, aes(x = song_id, y = 1, fill = value)) +
+  geom_tile() +
+  facet_wrap(~ variable) +
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_fill_gradientn(colors = rev(col_strip)) +
+  guides(fill = guide_colorbar(barwidth = 1)) +
+  labs(title = "Audio Features of Bottom-Ranked Songs (Billboard 100, 2010s)",
+       caption = "Source: Data.World | github: julia-tache | September 14th, 2021",
+       fill = "Value") +
+  theme_strip
+
+# Text plot
+text.p <- ggparagraph(paste("Bottom 10 Songs (based on Spotify track popularity): ", bottom_10), face = "bold", size = 8)
+
+# Arrange the plots on the same page
+ggarrange(plot2, text.p,
+          ncol = 1, nrow = 2,
+          heights = c(1, 0.3))
+
+ggsave("bottom_songs.png")
+```
