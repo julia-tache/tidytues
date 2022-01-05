@@ -1,0 +1,146 @@
+---
+title: "Tidy Tuesday - Week 39"
+author: "Julia Tache"
+date: "09/21/2021"
+header-includes:
+   - \usepackage{dcolumn}
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default 
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+library(tidyverse)
+library(tidytuesdayR)
+
+tuesdata <- tidytuesdayR::tt_load('2021-12-21')
+
+starbucks <- tuesdata$starbucks
+
+head(starbucks)
+```
+
+```{r plot 1 - speciality drinks}
+
+theme_strip <- theme_minimal() +
+  theme(axis.text.x = element_blank(),
+        axis.line.y = element_blank(),
+        axis.title = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(size = 10, hjust = 0.5),
+        legend.position="bottom",
+        legend.title = element_blank())
+
+starbs_special <- starbucks %>%
+  filter(size == "grande") %>%
+  filter(milk == "5") %>%
+  filter(whip == 1) %>%
+  select(-sodium_mg, -saturated_fat_g, -trans_fat_g, -fiber_g, -sugar_g) %>%
+  rename("Calories" = "calories") %>%
+  rename("Total Fat (g)" = "total_fat_g") %>%
+  rename("Cholesterol (mg)" = "cholesterol_mg") %>%
+  rename("Total Carbs (g)" = "total_carbs_g") %>%
+  rename("Caffeine (mg)" = "caffeine_mg")
+
+starbs_special <- starbs_special[-c(2), ] # gets rid of repeat
+
+swr = function(string, nwrap=20) {
+  paste(strwrap(string, width=nwrap), collapse="\n")
+}
+swr = Vectorize(swr)
+
+# Create line breaks in Year
+starbs_special$product_name <- swr(starbs_special$product_name)
+
+# code from https://stackoverflow.com/questions/37174316/how-to-fit-long-text-into-ggplot2-facet-titles?noredirect=1&lq=1
+
+library(png)
+
+img <- readPNG("mug.png")
+
+p <- starbs_special %>%
+  pivot_longer(c(Calories, `Total Fat (g)`,  
+                 `Cholesterol (mg)`, `Total Carbs (g)`, `Caffeine (mg)`), 
+               names_to = "type", values_to = "value") %>%
+  ggplot() + 
+  aes(x = size, y = value, fill = type) + 
+  geom_col(width = 0.55) +
+  annotation_raster(img, ymin = -250, ymax= 825, xmin = 0.7, xmax = 1.55) +
+  facet_wrap(~product_name) +
+  scale_fill_brewer(palette = "BrBG") +
+  theme_strip + 
+  theme(strip.text.x = element_text(
+        size = 7, face = "bold.italic",
+        margin = margin(b = 0, t = 0))) +
+  labs(title = "Nutrition Facts of Speciality Starbucks Drinks",
+       subtitle = "Grande, Whole Milk, with Whip",
+       caption = "Source: Behance - Starbucks infographics | github: julia-tache | Jan 4th, 2022")
+
+p
+
+ggsave("speciality.png")
+
+```
+
+**Alt Text:**
+
+Chart Type: A 4 by 4 grid of 116 stacked bar graphs in the shape of coffee mugs.
+
+Type of Data: Each bar graph represents a grande-sized (473 ml) speciality drink at Starbucks with whole milk and whipped cream. Each bar graph shows nutritional facts for each drinK: the amount of caffeine (mg), calories (mg), cholesterol (mg), total carbs (g), and total fat (g).
+
+I included this because I was curious about the nutritional content of the speciality drinks at Starbucks because people often emphasize how high in calories they are. The White Chocolate Mochas have the most calories (500) out of caffeinated drinks and the White Hot Chocolate has the most calories overall (520). No wonder why they are so delicious!
+
+```{r plot 2}
+theme_strip_mod <- theme_minimal() +
+  theme(axis.line.y = element_blank(),
+        axis.title = element_blank(),
+        panel.grid.major = element_blank(),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        legend.position="bottom",
+        legend.title = element_blank())
+
+brewed <- starbucks[grep("brewed coffee", starbucks$product_name), ]
+Brewed <- starbucks[grep("Brewed Coffee", starbucks$product_name), ]
+
+black <- rbind(brewed, Brewed)
+
+black$size <- factor(black$size, levels=c("short", "tall", "grande", "venti"))
+
+black$product_name <- swr(black$product_name)
+
+black$product_name <- str_to_title(black$product_name)
+
+black %>%
+  filter(size != "trenta") %>%
+  ggplot() + 
+  aes(x = reorder(product_name, caffeine_mg), y = caffeine_mg) +
+  geom_col(fill = "#654321") + 
+  facet_grid(rows = vars(size)) +
+  theme_strip_mod + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(title = "Caffeine (mg) in Starbucks Black Coffee",
+       caption = "Source: Behance - Starbucks infographics | github: julia-tache | Jan 4th, 2022")
+
+ggsave("black.png")
+```
+
+
+**Alt Text:**
+
+Chart Type: A facet_grid bar graph.
+
+Tyep of Data: The x-axis includes the 8 kinds of plain black coffee in the dataset which differ based on roast (light, medium, dark) and brewing method (regular, cold, Clover, which is a special machine used by Starbucks for maximum coffee extraction). The y-axis shows caffeine in each kind of black coffee in mg and the graphs are split into 4 categories based on size: short, tall, grande, and venti.
+
+I included this becasue I was curious to see how caffeine content differed in cups of coffee. Darker roaster coffees tend to have lower levels of caffeine despite their stronger flavor, but the Clover Brewed Coffee had more caffeine compared to the regular brewed coffee and the cup of black coffee with the most caffeine was a venti Clover Brewed Dark Roast with over 400 mg.
+
+Thomas Mock (2021). Tidy Tuesday: A weekly data project aimed at the R ecosystem. https://github.com/rfordatascience/tidytuesday.
+
+

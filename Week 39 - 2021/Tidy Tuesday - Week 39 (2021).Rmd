@@ -1,0 +1,59 @@
+---
+title: "Tidy Tuesday - Week 39"
+author: "Julia Tache"
+date: "09/21/2021"
+header-includes:
+   - \usepackage{dcolumn}
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default 
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+library(tidyverse)
+library(tidytuesdayR)
+
+tuesdata <- tidytuesdayR::tt_load('2021-09-21')
+
+nominees <- tuesdata$nominees
+```
+
+```{r view data}
+head(nominees)
+```
+
+```{r subset data to winners and tally wins for top 10 producers}
+winners <- nominees %>% 
+  filter(type == "Winner") %>%
+  select(!production) %>%
+  distinct()
+
+winners_count <- winners %>% 
+  group_by(distributor) %>%
+  tally() %>%
+  arrange(desc(n))
+
+winners_count <- winners_count[1:10, ]
+```
+
+```{r shows with most wins in 2020}
+wins_2020 <- winners %>% 
+  filter(year == 2021) %>%
+  group_by(title, logo) %>%
+  tally() %>%
+  arrange(desc(n))
+```
+
+```{r}
+ggplot(winners_count, aes(distributor, n)) +
+  geom_bar(stat = "identity") + 
+  coord_flip() +
+  
+```
+
