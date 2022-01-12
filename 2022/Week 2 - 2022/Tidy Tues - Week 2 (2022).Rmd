@@ -1,0 +1,195 @@
+---
+title: "Tidy Tuesday - Week 2"
+author: "Julia Tache"
+date: "1/11/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+library(tidyverse)
+library(tidytuesdayR)
+
+tuesdata <- tidytuesdayR::tt_load('2022-01-11')
+
+colony <- tuesdata$colony
+stressor <- tuesdata$stressor
+
+head(colony)
+head(stressor)
+```
+
+```{r prepare data for mapping}
+colony <- colony %>%
+  filter(state != "United States") %>%
+  filter(state != "Other States")
+
+stressor <- stressor %>%
+  filter(state != "United States") %>%
+  filter(state != "Other States")
+
+n_2015 <- colony %>%
+  group_by(year, state) %>%
+  summarize(yearly_n = sum(colony_n)) %>%
+  filter(year == 2015)
+
+n_2020 <- colony %>%
+  group_by(year, state) %>%
+  summarize(yearly_n = sum(colony_n)) %>%
+  filter(year == 2020) %>%
+  select(-year) 
+
+n_2015$state <- state.abb[match(n_2015$state,state.name)]
+n_2020$state <- state.abb[match(n_2020$state,state.name)]
+```
+
+```{r map 1}
+library(usmap)
+
+plot_usmap(data = n_2015, values = "yearly_n") + 
+  scale_fill_continuous(low = "gold", high = "black", name = "n Colonies", label = scales::comma) + 
+  labs(title = "Number of Bee Colonies in 2015", subtitle = "", 
+       caption = "Source: USDA | github: julia-tache | Jan 11th, 2022") +
+  theme(legend.position = "right")
+
+ggsave("map1.png")
+```
+
+Image Description: A choropleth map which shows the number of bee colonies across the United States in 2015. The color scale goes from gold to black with gold being lower numbers and black being higher numbers of colonies. Most states have under a million colonies of bees while California, the outlier in the data, has nearly four million.
+
+```{r map 2}
+library(usmap)
+
+plot_usmap(data = n_2020, values = "yearly_n") + 
+  scale_fill_continuous(low = "gold", high = "black", name = "n Colonies", label = scales::comma) + 
+  labs(title = "Number of Bee Colonies in 2020", subtitle = "", 
+       caption = "Source: USDA | github: julia-tache | Jan 11th, 2022") +
+  theme(legend.position = "right")
+
+ggsave("map2.png")
+```
+
+Image Description: A choropleth map which shows the number of bee colonies across the United States in 2020 with the same gold to black color scale as the previous map. The number of bee colonies (in millions) according to this map has stayed fairly consistent over the past 5 years.
+
+```{r prepare data for statebin map}
+stressor <- na.omit(stressor) %>%
+  filter(stressor != "Unknown") %>%
+  filter(stressor!= "Other")
+
+max_stressor_2015 <- stressor %>%
+  group_by(year, state, stressor) %>%
+  summarize(stress_pct_yr = max(stress_pct)) %>%
+  mutate(max_stress = max(stress_pct_yr)) %>%
+  filter(year == 2015)
+
+max_stressor_2015 <- max_stressor_2015[max_stressor_2015$stress_pct_yr %in% max_stressor_2015$max_stress, ] %>%
+  select(-max_stress)
+
+max_stressor_2020 <- stressor %>%
+  group_by(year, state, stressor) %>%
+  summarize(stress_pct_yr = max(stress_pct)) %>%
+  mutate(max_stress = max(stress_pct_yr)) %>%
+  filter(year == 2020)
+
+max_stressor_2020 <- max_stressor_2020[max_stressor_2020$stress_pct_yr %in% max_stressor_2020$max_stress, ] %>%
+  select(-max_stress)
+```
+
+```{r statebin map 1}
+library(statebins)
+
+max_stressor_2015$value <- max_stressor_2015$stressor
+
+statebins(max_stressor_2015,
+          ggplot2_scale_function = scale_fill_manual,
+          font_size = 3, dark_label = "black", light_label = "white",
+          name = "Top Bee Colony Stressors (2015)",
+          values = c(`Varroa mites` = "#FFD700", Pesticides = "#808080", `Other pests/parasites` = "#000000")) +
+  theme_statebins() +
+  labs(caption = "Source: USDA | github: julia-tache | Jan 11th, 2022")
+
+ggsave("map3.png")
+```
+
+Image Description: A statebin map which shows the most impactful stressor on bee colonies in each state in 2015. Varroa mites (coded as gold) are the biggest problem in most states while in Hawai'i and Alabama other pests/parasites (coded as black) are problems. In North Dakota, pesticides (coded as gray) are the biggest issue facing bee colonies.
+
+```{r statebin map 2}
+max_stressor_2020$value <- max_stressor_2020$stressor
+
+statebins(max_stressor_2020,
+          font_size = 3, dark_label = "black", light_label = "white",
+          ggplot2_scale_function = scale_fill_manual,
+          name = "Top Bee Colony Stressors (2020)",
+          values = c(`Varroa mites` = "#FFD700", Disesases = "#FFFF00",
+                     Pesticides = "#808080", `Other pests/parasites` = "#000000")) +
+  theme_statebins() +
+  labs(caption = "Source: USDA | github: julia-tache | Jan 11th, 2022")
+
+ggsave("map4.png")
+```
+
+Image Description: A statebin map which shows the most impactful stressor on bee colonies in each state in 2020. Varroa mites (coded as gold) are still the biggest problem in most states. In Hawai'i, Mississippi, and South Carolina, other pests/parasites (coded as black) are the main problem. In South Dakota, pesticides (coded as gray) are the biggest issue facing bee colonies and in New Jersey the worst stressor is Disesases (coded as yellow).
+
+```{r prepare data for bar graph}
+library(reshape)
+
+col_2015 <- colony %>%
+  group_by(year, state) %>%
+  summarize(colony_n_yr = sum(colony_n), 
+            colony_max_yr = sum(colony_max), 
+            colony_lost_yr = sum(colony_lost)) %>%
+  filter(year == 2015) %>%
+  arrange(desc(colony_n_yr))
+
+top_20_col_2015 <- col_2015[0:20, ]
+
+lost_max_long <- melt(data = as.data.frame(top_20_col_2015),
+     id.vars = "state",
+     measure.vars = c("colony_lost_yr", "colony_n_yr", "colony_max_yr"))
+
+top_20_col_2015$state <- state.abb[match(top_20_col_2015$state, state.name)]
+lost_max_long$state <- state.abb[match(lost_max_long$state, state.name)]
+```
+
+```{r bar graph}
+library(scales)
+
+ggplot(top_20_col_2015, aes(x = state, y = colony_n_yr)) +
+  geom_bar(stat = "identity", color = "white", fill = "black") + 
+  geom_point(data = lost_max_long, aes(state, value), color = "gold") +
+  geom_line(data = lost_max_long, aes(x = state, y = value), color = "gold") + 
+  annotate(geom = "text", x = lost_max_long$state[17], y = (lost_max_long$value[1]), 
+           label = "Colonies \nLost", 
+           color = "white",
+           size = 2.25) + 
+  annotate(geom = "text", x = lost_max_long$state[17], y = (lost_max_long$value[21]), 
+           label = "No. of \nColonies", 
+           color = "white",
+           size = 2.25) + 
+  annotate(geom = "text", x = lost_max_long$state[17], y = (lost_max_long$value[41]), 
+           label = "Max \nColonies", 
+           color = "white",
+           size = 2.25) +
+  ggtitle("Bee Colonies in Top 20 States (2015)") +
+  theme_minimal() + 
+  xlab("State") + 
+  theme(plot.title = element_text(face = "italic", color = "white", hjust = 0.5,
+                                  margin = margin(t = 10, b = -20)),
+        plot.subtitle = element_text(face = "italic", color = "white"),
+        plot.caption = element_text(color = "white"), 
+        axis.title.y = element_blank(),
+        axis.text.x=element_text(color="white"),
+        axis.text.y=element_text(color="white", size = 8),
+        plot.background = element_rect(fill = "#000000"),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) + 
+  labs(caption = "Source: USDA | github: julia-tache | Jan 11th, 2022") +
+	scale_y_continuous(labels = label_number(suffix = " M", scale = 1e-6))
+
+ggsave("barchart.png")
+```
+
+Image Description: A bar graph with white-outlined black bars on a black surface with white text which shows the amount of bee colonies (y-axis, in millions) in the top 20 most "bee populous" states of 2015 (x-axis). On each bar is a superimposed vertical line with three data points: the number of colonies lost that year, the number of colonies, and the max amount of colonies possible in the state that year.

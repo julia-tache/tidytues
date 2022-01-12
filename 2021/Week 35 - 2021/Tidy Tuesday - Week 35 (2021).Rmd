@@ -35,6 +35,8 @@ lemurs_long <- melt(data = as.data.frame(lemurs_b2016),
      id.vars = "year",
      measure.vars = "n_known_offspring")
 
+lemurs_long
+
 lemurs_long <- as.data.frame(lemurs_long)
 lemurs_long$number <- lemurs_long$value
 
@@ -51,6 +53,8 @@ summary_long <- melt(data = as.data.frame(summary),
      value.name = "values")
 
 spline_int <- as.data.frame(spline(summary$year, summary$median))
+
+spline_int
 
 ggplot(lemurs_long, aes(x = year, y = number)) +
   geom_point(alpha = 0.5, color = "light gray") + 
