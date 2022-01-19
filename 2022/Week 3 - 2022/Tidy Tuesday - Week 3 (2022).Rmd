@@ -1,0 +1,156 @@
+---
+title: "Tidy Tuesday - Week 3"
+author: "Julia Tache"
+date: "1/18/2022"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+
+```{r load data}
+library(tidyverse)
+library(tidytuesdayR)
+
+tuesdata <- tidytuesdayR::tt_load('2022-01-18')
+chocolate <- tuesdata$chocolate
+
+summary(chocolate)
+head(chocolate)
+```
+
+```{r average ratings}
+library(countrycode)
+
+chocolate$cocoa_percent <- as.numeric(str_extract(chocolate$cocoa_percent, "\\d+"))/100
+
+dark_chocolate <- chocolate %>%
+  filter(cocoa_percent <= 0.8) %>%
+  filter(country_of_bean_origin != "Blend") %>%
+  group_by(review_date, country_of_bean_origin) %>%
+  summarize(country_ratings = mean(rating))
+
+extra_dark_chocolate <- chocolate %>%
+  filter(cocoa_percent > 0.8) %>%
+  filter(country_of_bean_origin != "Blend") %>%
+  group_by(review_date, country_of_bean_origin) %>%
+  summarize(country_ratings = mean(rating)) 
+
+dark_chocolate$continent <- countrycode(sourcevar = dark_chocolate$country_of_bean_origin,
+                                        origin = "country.name",
+                                        destination = "continent")
+
+extra_dark_chocolate$continent <- countrycode(sourcevar = extra_dark_chocolate$country_of_bean_origin,
+                                        origin = "country.name",
+                                        destination = "continent")
+
+dark_chocolate <- na.omit(dark_chocolate)
+extra_dark_chocolate <- na.omit(extra_dark_chocolate)
+
+extra_dark_chocolate <- extra_dark_chocolate %>%
+  filter(continent != "Asia")
+
+head(dark_chocolate)
+head(extra_dark_chocolate)
+```
+
+
+```{r top words}
+library(tokenizers)
+
+dark_choc <- chocolate %>%
+  filter(cocoa_percent <= 0.8)
+
+dark_choc_words <- strsplit(toString(dark_choc$most_memorable_characteristics),",")
+dark_choc_words_freq <- table(unlist(dark_choc_words))
+dark_choc_words_df <- as.data.frame(cbind(names(dark_choc_words_freq), as.numeric(dark_choc_words_freq)))
+dark_choc_words_df$V2 <- as.numeric(dark_choc_words_df$V2)
+
+xtra_dark_choc <- chocolate %>%
+  filter(cocoa_percent > 0.8)
+
+xtra_dark_choc_words <- strsplit(toString(xtra_dark_choc$most_memorable_characteristics),",")
+xtra_dark_choc_words_freq <- table(unlist(xtra_dark_choc_words))
+xtra_dark_choc_words_df <- as.data.frame(cbind(names(xtra_dark_choc_words_freq), as.numeric(xtra_dark_choc_words_freq)))
+xtra_dark_choc_words_df$V2 <- as.numeric(xtra_dark_choc_words_df$V2)
+```
+
+```{r dark chocolate ridge graph}
+library(ggridges)
+library(wesanderson)
+library(hrbrthemes)
+
+pal <- wes_palette("GrandBudapest1", 100, type = "continuous")
+
+ggplot(dark_chocolate, aes(x = country_ratings, y = continent, fill = ..x..)) +
+  geom_density_ridges_gradient(scale = 1, rel_min_height = 0.01) +
+  scale_fill_gradientn(colours = pal, guide = guide_colourbar(), name = "Rating Scale") +
+  labs(title = "Dark Chocolate Review Ratings by Continent (2006-2021)") +
+  theme_ridges() + 
+  theme(plot.title = element_text(face = "italic", hjust = 0.5),
+        legend.position = "bottom",
+        legend.title = element_text(size = 8),
+        legend.text = element_text(size = 7),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 12),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) + 
+  guides(fill = guide_colourbar(label.position = "bottom", barwidth = 25, barheight = 0.5))
+
+ggsave("ridgeplot_1.png")
+```
+
+This first graph is a density ridgeplot that takes a look at the distribution of ratings for dark chocolate (cocoa <=80%) amongst continents where the chocolate in the data were sourced from (Oceania, Asia, the Americas, and Africa). Most chocolates peak between a score of 3 and a 3.5 on a 5-point scale. Both Africa and the Americas have long tails on the left indicating a collection of chocolates with lower ratings. The continuous color scale is "GrandBudapest1" from the Wes Anderson package and goes from orange to pink to maroon to mauve.
+
+```{r extra dark chocolate ridge graph}
+ggplot(extra_dark_chocolate, aes(x = country_ratings, y = continent, fill = ..x..)) +
+  geom_density_ridges_gradient(scale = 0.8, rel_min_height = 0.01) +
+  scale_fill_gradientn(colours = pal, guide = guide_colourbar(), name = "Rating Scale") +
+  labs(title = "Extra Dark Chocolate Review Ratings by Continent (2006-2021)") +
+  theme_ridges() + 
+  theme(plot.title = element_text(face = "italic", hjust = 0.5),
+        legend.position = "bottom",
+        legend.title = element_text(size = 8),
+        legend.text = element_text(size = 7),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 12),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank()) + 
+  guides(fill = guide_colourbar(label.position = "bottom", barwidth = 25, barheight = 0.5))
+
+ggsave("ridgeplot_2.png")
+```
+
+This graph is another density ridgeplot that takes a look at the distribution of ratings for extra dark chocolate (cocoa >80%) from the different continents in the data. Both Oceania and Africa have bimodal distrubtions which peak between a score of 2 and 3 and a score of 3 and 4. The Americans has a long tail to the left and a peak right after a score of 3. The color scale is once again "GrandBudapest1" from the Wes Anderson package.
+
+```{r dark chocolate word cloud}
+library(webshot)
+webshot::install_phantomjs()
+
+library(wordcloud2) 
+
+wc1 <- wordcloud2(data = dark_choc_words_df, size = 1, color= "random-dark")
+wc1
+
+wc2 <- wordcloud2(data = xtra_dark_choc_words_df, size = 1, color= "random-dark")
+wc2
+
+library(htmlwidgets)
+saveWidget(wc1,"dark-chocolate-cloud.html", selfcontained = F)
+webshot("dark-chocolate-cloud.html","dark-chocolate-cloud.png", delay = 5, vwidth = 480, vheight = 480)
+
+saveWidget(wc2,"extra-dark-chocolate-cloud.html", selfcontained = F)
+webshot("extra-dark-chocolate-cloud.html","extra-dark-chocolate-cloud.png", delay = 5, vwidth = 480, vheight = 480)
+```
+
+The first multicolored wordcloud gives the tasting notes of dark chocolate. Some of the top notes are cocoa, creamy, earthy, intense, and floral. 
+
+The second multicolored wordcloud gives the tasting notes of extra dark chocolate. Some of the top notes are bitter, intense, fatty, and spicy. 
