@@ -1,0 +1,86 @@
+---
+title: "Tidy Tuesday - Week 4 (2022)"
+author: "Julia Tache"
+date: "1/25/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+library(tidyverse)
+library(tidytuesdayR)
+library(waffle)
+library(hrbrthemes)
+
+tuesdata <- tidytuesdayR::tt_load('2022-01-25')
+ratings <- tuesdata$ratings
+details <- tuesdata$details
+
+head(ratings)
+head(details)
+```
+
+
+```{r prepare data for graphing}
+
+joined_df <- left_join(ratings, details, by = "id")
+
+joined_df$boardgamecategory <- gsub("\\[|\\]", "", joined_df$boardgamecategory)
+joined_df$boardgamecategory <- gsub("'", "", joined_df$boardgamecategory)
+joined_df$boardgamecategory <- gsub('"', "", joined_df$boardgamecategory)
+joined_df$boardgamecategory <- gsub('Childrens Game', "Children's Game", joined_df$boardgamecategory)
+joined_df$boardgamecategory <- trimws(joined_df$boardgamecategory)
+
+joined_df$boardgamecategory <- as.list(strsplit(joined_df$boardgamecategory, ","))
+
+joined_df$boardgamecategory <- sapply(joined_df$boardgamecategory, "[[", 1) # primary category
+
+# joined_df %>%
+#   count(boardgamecategory) %>%
+#   arrange(desc(n))
+
+joined_df <- joined_df %>%
+  filter(boardgamecategory == "Card Game" | boardgamecategory == "Abstract Strategy" | boardgamecategory == "Adventure" | 
+           boardgamecategory == "Action / Dexterity" | boardgamecategory == "Animals" | boardgamecategory == "Wargame" |
+           boardgamecategory == "Bluffing" | boardgamecategory == "Economic" | boardgamecategory == "Dice" |
+           boardgamecategory == "Ancient")
+
+joined_df <- joined_df %>%
+  filter(year >= 1700) %>%
+  filter(year < 2020)
+
+joined_df$century <- gsub("17\\d\\d", "18th Century", joined_df$year)
+joined_df$century <- gsub("18\\d\\d", "19th Century", joined_df$century)
+joined_df$century <- gsub("19\\d\\d", "20th Century", joined_df$century)
+joined_df$century <- gsub("20\\d\\d", "21st Century", joined_df$century)
+
+summary_df <- joined_df %>%
+  group_by(century) %>%
+  count(boardgamecategory) %>%
+  group_by(century) %>%
+  mutate(percent = prop.table(n))
+
+summary_df$percent <- round(summary_df$percent * 100)
+```
+
+```{r waffle chart - category}
+
+ggplot(summary_df, aes(fill = boardgamecategory, values = percent)) +
+  geom_waffle() +
+  facet_wrap(~century) +
+  coord_equal()  +
+  theme_minimal() +
+  theme_enhance_waffle() +
+  labs(title = "Primary Game Categories over Centuries",
+       caption = "Source: Kaggle | github: julia-tache | Jan 25th, 2022") +
+  theme(plot.title = element_text(face = "italic", hjust = 0.5),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        legend.title = element_blank()) 
+
+ggsave("waffle.png")
+```
+
