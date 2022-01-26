@@ -64,12 +64,19 @@ summary_df <- joined_df %>%
   mutate(percent = prop.table(n))
 
 summary_df$percent <- round(summary_df$percent * 100)
+
+categories <- sort(unique(summary_df$boardgamecategory))
 ```
 
 ```{r waffle chart - category}
 
 ggplot(summary_df, aes(fill = boardgamecategory, values = percent)) +
   geom_waffle() +
+  scale_fill_manual(
+    name = NULL,
+    values = c("#A40E4C", "#D74E09", "#F49D6E", "#F5D6BA", "#F2BB05", "#F0F0C9", "#ACC3A6", "#124E78", "#2C2C54",  "#6E0E0A"),
+    labels = categories
+  ) +
   facet_wrap(~century) +
   coord_equal()  +
   theme_minimal() +
@@ -84,3 +91,4 @@ ggplot(summary_df, aes(fill = boardgamecategory, values = percent)) +
 ggsave("waffle.png")
 ```
 
+This graph shows a waffle chart of primary game categories over the past 4 centuries, with the colors as followed: dark red for Abstract Strategy, scarlet for Action / Dexterity, light orange for Adventure, peach for Ancient, golden for Animals, light green for Bluffing, sage for Card Game, dark blue for Dice, indigo for Economic, and purple/maroon for Wargame. In the 18th century, games only fell into basic categories of Abstract Strategy, Action / Dexterity, Bluffing, Cards, and Dice, while more complex games were developed later on. Card Games have consistently been really popular, as well as Abstract Strategy, but Wargames were also very prominent in the 20th century.
