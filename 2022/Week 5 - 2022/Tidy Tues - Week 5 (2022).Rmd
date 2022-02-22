@@ -23,7 +23,12 @@ head(breed_rank_all)
 ```
 
 ```{r}
+
 breed_traits$Breed <- iconv(breed_traits$Breed, from = 'UTF-8', to = 'ASCII//TRANSLIT')
+
+breed_traits$Breed[9] <- "Pointers"
+
+breed_rank_all$Breed[9] <- "Pointers"
 
 breed_rank_all_2020 <- breed_rank_all %>%
   select(Breed, `2020 Rank`)
@@ -49,15 +54,20 @@ colnames(max_min) <- c("Affectionate With Family", "Shedding Level", "Trainabili
 
 # Bind the variable ranges to the data
 breed_traits_10 <- rbind(max_min, breed_traits_10)
-breed_traits_10
+colnames(breed_traits_10) <- c("Affectionate With Family", "Shedding \nLevel", "Trainability \nLevel", 
+                       "Energy \nLevel", "Barking \nLevel")
+
 ```
 
 ```{r}
+library(fmsb)
+
 # helper function from https://www.datanovia.com/en/blog/beautiful-radar-chart-in-r-using-fmsb-and-ggplot-packages/
 
 create_beautiful_radarchart <- function(data, color = "#00AFBB", 
-                                        vlabels = colnames(data), vlcex = 0.7,
-                                        caxislabels = NULL, title = NULL, ...){
+                                        vlabels = colnames(data), vlcex = 0.8,
+                                        caxislabels = NULL, title = "title", 
+                                        cex.main = 3, ...){
   radarchart(
     data, axistype = 1,
     # Customize the polygon
@@ -72,8 +82,11 @@ create_beautiful_radarchart <- function(data, color = "#00AFBB",
   )
 }
 
+library(imager)
+img <- load.image("dogs2.png")
+
 par(mar = rep(1, 4))
-par(mfrow = c(2, 5))
+par(mfrow = c(3, 4))
 
 for(i in 1:10){
   create_beautiful_radarchart(
@@ -82,120 +95,10 @@ for(i in 1:10){
     )
 }
 
-par(op)
+library(grid)
+
+grid.raster(img, x=.73, y=.18, width=.275) 
+mtext(expression(bold("Traits of Top Ranked Dogs 2020")), side = 3, line = -24, adj = 0.87, cex = 1.1, outer = TRUE)
+mtext("Source: AKC | github: julia-tache | Feb 10th, 2022", side = 3, line = -34, adj = 1, cex = .75, outer = TRUE)
 
 ```
-
-
-```{r}
-breed_traits_10_scaled <- round(apply(breed_traits_10, 2, scales::rescale), 2)
-breed_traits_10_scaled <- as.data.frame(breed_traits_10_scaled)
-
-head(breed_traits_10_scaled)
-
-# Variables summary
-# code from https://www.datanovia.com/en/blog/beautiful-radar-chart-in-r-using-fmsb-and-ggplot-packages/
-
-# Get the minimum and the max of every column  
-col_max <- apply(breed_traits_10_scaled, 2, max)
-col_min <- apply(breed_traits_10_scaled, 2, min)
-# Calculate the average profile 
-col_mean <- apply(breed_traits_10_scaled, 2, mean)
-# Put together the summary of columns
-col_summary <- t(data.frame(Max = col_max, Min = col_min, Average = col_mean))
-
-
-# Bind variables summary to the data
-breed_traits_10_scaled2 <- as.data.frame(rbind(col_summary, breed_traits_10_scaled))
-breed_traits_10_scaled2
-```
-
-```{r}
-library(fmsb)
-
-opar <- par()
-par(mar = rep(1, 4))
-par(mfrow = c(2, 5))
-
-for (i in 4:nrow(breed_traits_10_scaled2)) {
-  radarchart(
-    breed_traits_10_scaled2[c(4:13, i), ], 
-    pfcol = c("#99999980", NA),
-    pcol= c(NA, 2), plty = 1, plwd = 2,
-    title = row.names(breed_traits_10_scaled2)[i]
-    )
-}
-
-par <- par(opar)
-
-```
-
-
-```{r prepare data for graphing}
-
-joined_df <- left_join(ratings, details, by = "id")
-
-joined_df$boardgamecategory <- gsub("\\[|\\]", "", joined_df$boardgamecategory)
-joined_df$boardgamecategory <- gsub("'", "", joined_df$boardgamecategory)
-joined_df$boardgamecategory <- gsub('"', "", joined_df$boardgamecategory)
-joined_df$boardgamecategory <- gsub('Childrens Game', "Children's Game", joined_df$boardgamecategory)
-joined_df$boardgamecategory <- trimws(joined_df$boardgamecategory)
-
-joined_df$boardgamecategory <- as.list(strsplit(joined_df$boardgamecategory, ","))
-
-joined_df$boardgamecategory <- sapply(joined_df$boardgamecategory, "[[", 1) # primary category
-
-# joined_df %>%
-#   count(boardgamecategory) %>%
-#   arrange(desc(n))
-
-joined_df <- joined_df %>%
-  filter(boardgamecategory == "Card Game" | boardgamecategory == "Abstract Strategy" | boardgamecategory == "Adventure" | 
-           boardgamecategory == "Action / Dexterity" | boardgamecategory == "Animals" | boardgamecategory == "Wargame" |
-           boardgamecategory == "Bluffing" | boardgamecategory == "Economic" | boardgamecategory == "Dice" |
-           boardgamecategory == "Ancient")
-
-joined_df <- joined_df %>%
-  filter(year >= 1700) %>%
-  filter(year < 2020)
-
-joined_df$century <- gsub("17\\d\\d", "18th Century", joined_df$year)
-joined_df$century <- gsub("18\\d\\d", "19th Century", joined_df$century)
-joined_df$century <- gsub("19\\d\\d", "20th Century", joined_df$century)
-joined_df$century <- gsub("20\\d\\d", "21st Century", joined_df$century)
-
-summary_df <- joined_df %>%
-  group_by(century) %>%
-  count(boardgamecategory) %>%
-  group_by(century) %>%
-  mutate(percent = prop.table(n))
-
-summary_df$percent <- round(summary_df$percent * 100)
-
-categories <- sort(unique(summary_df$boardgamecategory))
-```
-
-```{r waffle chart - category}
-
-ggplot(summary_df, aes(fill = boardgamecategory, values = percent)) +
-  geom_waffle() +
-  scale_fill_manual(
-    name = NULL,
-    values = c("#A40E4C", "#D74E09", "#F49D6E", "#F5D6BA", "#F2BB05", "#F0F0C9", "#ACC3A6", "#124E78", "#2C2C54",  "#6E0E0A"),
-    labels = categories
-  ) +
-  facet_wrap(~century) +
-  coord_equal()  +
-  theme_minimal() +
-  theme_enhance_waffle() +
-  labs(title = "Primary Game Categories over Centuries",
-       caption = "Source: Kaggle | github: julia-tache | Jan 25th, 2022") +
-  theme(plot.title = element_text(face = "italic", hjust = 0.5),
-        panel.grid.major = element_blank(), 
-        panel.grid.minor = element_blank(),
-        legend.title = element_blank()) 
-
-ggsave("waffle.png")
-```
-
-This graph shows a waffle chart of primary game categories over the past 4 centuries, with the colors as followed: dark red for Abstract Strategy, scarlet for Action / Dexterity, light orange for Adventure, peach for Ancient, golden for Animals, light green for Bluffing, sage for Card Game, dark blue for Dice, indigo for Economic, and purple/maroon for Wargame. In the 18th century, games only fell into basic categories of Abstract Strategy, Action / Dexterity, Bluffing, Cards, and Dice, while more complex games were developed later on. Card Games have consistently been really popular, as well as Abstract Strategy, but Wargames were also very prominent in the 20th century.
