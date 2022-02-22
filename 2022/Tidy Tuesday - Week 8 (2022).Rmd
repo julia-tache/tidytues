@@ -1,0 +1,112 @@
+---
+title: "Tidy Tuesday - Week 8 (2022)"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+library(tidyverse)
+library(tidytuesdayR)
+
+freedom <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-02-22/freedom.csv')
+
+head(freedom)
+```
+
+Objective: Recreate a version of [this graph](https://github.com/rfordatascience/tidytuesday/blob/master/data/2022/2022-02-22/pic2.png) from Freedom House which displays the number of countries improving or declining in their Freedom aggregate score over the course of 10 years (2006-2015). The score used for their graph fell from 30 to 80 while the aggregate score in the data (Political Rights and Civil Liberties combined) falls on a scale of 1 to 14, so the final data look a bit different plotted on the graph below.
+
+```{r prep data for graphing}
+
+library(reshape2)
+
+freedom_dec <- freedom %>%
+  filter(year > 2004) %>%
+  filter(year <= 2015) %>%
+  select(country, year, CL, PR, Status)
+
+freedom_dec$agg <- freedom_dec$CL + freedom_dec$PR # aggregate freedom score
+
+freedom_dec <- freedom_dec %>%
+  group_by(country) %>%
+  mutate(diff = agg - lag(agg, default = first(agg))) %>% # change from year to year
+  select(country, year, agg, diff)
+
+counts <- freedom_dec %>% # get rid of observations with no change
+  filter(diff != 0)
+
+counts$Status <- ifelse(counts$diff > 0, "DECLINED", "IMPROVED") # positive changes are a decline because
+                                                                 # higher scores means lower freedom levels
+
+# count the number of declines and improvements in the data
+counts <- counts %>%
+  group_by(year) %>%
+  count(Status) %>%
+  filter(year > 2005)
+
+n <- counts %>%
+  filter(Status == "IMPROVED") %>%
+  select(n, Status)
+
+totals <- counts %>%
+  group_by(year) %>%
+  mutate(n2 = sum(n)) 
+
+totals <- unique(totals) # create a data frame with total countries for each year
+
+sums <- left_join(n, totals) # keep improved numbers
+
+sums <- as.data.frame(melt(sums, id.vars = c("Status", "year"))) %>%
+  select(-Status, -variable)
+
+sums <- rbind(sums[11:20, ], sums[1:10, ]) %>% # reorder for graphing
+  arrange(year)
+
+value <- select(sums, value)
+
+counts <- cbind(counts, value)
+
+```
+
+```{r area graph}
+
+library(ggrepel)
+library(scales)
+
+ggplot(counts, aes(x = year, y = n, fill = Status)) + 
+  geom_area() + 
+  geom_area(alpha=0.6 , size=.5)  +
+  scale_fill_manual(values = c("#FC90D0", "#69C3EF")) + 
+  geom_point(aes(x = year, y = value), color = "white") +
+  geom_label_repel(aes(x = year, y = value, label = n),
+                   box.padding   = 0.35, 
+                   point.padding = 0.5,
+                   segment.color = "grey50",
+                   color = "white") +
+  guides(fill = guide_legend(title = "Status", override.aes = aes(label = ""))) +
+  ylab("Number of Countries") +
+  theme_classic() + 
+  theme(panel.background = element_rect(fill = "#E7EEF4"),
+        plot.background = element_rect(fill = "#E7EEF4"),
+        panel.grid.major.y = element_line(colour = "dark gray", linetype = "dashed"),
+        legend.position = "top",
+        legend.justification = 'left',
+        plot.title = element_text(face  ="bold"),
+        legend.title = element_blank(),
+        axis.title.x = element_blank()) +
+  scale_x_continuous(breaks= pretty_breaks()) +
+  scale_y_continuous(expand = c(0, 0)) +
+  labs(title = "A DECADE OF DECLINE",
+       subtitle = "Countries with net declines in aggregate score have generally outnumbered \nthose with gains for the past 10 years.",
+       caption = "Source: Freedom House | github: julia-tache | Feb 22nd, 2022")
+  
+ggsave("area_graph.png")
+```
+
+The chart is titled "A Decade of Decline, Countries with net declines in aggregate score have generally outnumbered those with gains for the past 10 years." 
+
+The area chart displays year on the x-axis from 2006 to 2015 and the number of countries improving or declining in their Freedom aggregate score from 0 to 30 on the y-axis. 16, 13, 15, 21, 10, 11, 11, 10, 20, and 17 countries declined in their scores from 2006 to 2015. Improved countries were 15, 6, 10, 11, 10, 9, 13, 16, 8, 9 from 2006 to 2015. 
+
+The chart represents a greater number of countries with declining freedom in every year versus improving freedom.
