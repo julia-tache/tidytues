@@ -1,0 +1,176 @@
+---
+title: "Tidy Tuesday - Week 25 (2022)"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+library(tidyverse)
+library(tidytuesdayR)
+library(reshape2)
+library(gganimate)
+library(gifski)
+library(av)
+
+firsts <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-06-09/firsts.csv')
+science <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-06-09/science.csv')
+blackpast <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-06-16/blackpast.csv')
+census <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-06-16/census.csv')
+slave_routes <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-06-16/slave_routes.csv')
+african_names <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-06-16/african_names.csv')
+
+```
+
+```{r bubble chart}
+
+census_graph_race <- census %>%
+  select(-total, -division) %>%
+  filter(region == "USA Total") %>%
+  melt(id.vars = c("region", "year"),
+  variable.name = "race", 
+  value.name = "population")
+
+census_graph_region_free <- census %>%
+  filter(region != "USA Total") %>%
+  filter(year < 1866) %>%
+  group_by(year, region) %>%
+  summarize(black_free_pop = sum(black_free))
+
+census_graph_race %>%
+  arrange(desc(population)) %>%
+  ggplot(aes(x = year, y = population, size = population, color = race)) +
+  geom_point(alpha=0.5) +
+  scale_size(range = c(.1, 10), name = "Population") +
+  xlab("") +
+  ylab("") +
+  theme_classic() + 
+  theme(plot.title = element_text(face  ="bold"),
+        axis.title.x = element_blank()) +
+  labs(title = "U.S. Population Change for All Races from 1790 to 1870",
+       subtitle = "",
+       caption = "Source: U.S. Census | github: julia-tache | June 21st, 2022")
+
+census_graph_region_free %>%
+  arrange(desc(black_free_pop)) %>%
+  ggplot(aes(x = year, y = black_free_pop, size = black_free_pop, color = region)) +
+  geom_point(alpha=0.5) +
+  scale_size(range = c(.1, 10), name = "Population") +
+  xlab("") +
+  ylab("") +
+  theme_classic() + 
+  theme(plot.title = element_text(face  ="bold"),
+        axis.title.x = element_blank()) +
+  labs(title = "Population Change for Free Black People from 1790 to 1865 by Region",
+       subtitle = "The population of Black people who were not enslaved prior to the official end\n of slavery in 1865 steadily increased.",
+       caption = "Source: U.S. Census | github: julia-tache | June 21st, 2022")
+```
+
+```{r animated bubble chart}
+census_race_plot <- census_graph_race %>%
+  arrange(desc(population)) %>%
+  ggplot(aes(x = year, y = population, size = population, color = race)) +
+  geom_point(alpha=0.5) +
+  scale_size(range = c(.1, 10), name = "Population") +
+  xlab("") +
+  ylab("") +
+  theme_classic() + 
+  theme(plot.title = element_text(face  ="bold"),
+        axis.title.x = element_blank()) +
+  labs(title = "U.S. Population Change for All Races: {frame_time}",
+       subtitle = "",
+       caption = "Source: U.S. Census | github: julia-tache | June 21st, 2022") +
+  transition_time(as.integer(year)) +
+  ease_aes('linear')
+
+animate(census_race_plot, duration = 5, fps = 20, width = 400, height = 300, renderer = gifski_renderer())
+
+anim_save("census_race_plot.gif")
+```
+
+```{r}
+census_region_plot <- census_graph_region_free %>%
+  arrange(desc(black_free_pop)) %>%
+  ggplot(aes(x = year, y = black_free_pop, size = black_free_pop, color = region)) +
+  geom_point(alpha=0.5) +
+  scale_size(range = c(.1, 10), name = "Population") +
+  xlab("") +
+  ylab("") +
+  theme_classic() + 
+  theme(plot.title = element_text(face  ="bold"),
+        axis.title.x = element_blank()) +
+  labs(title = "Population of Free Black People by Region: {frame_time}",
+       subtitle = "The population of Black people who were not enslaved prior to the official\n end of slavery in 1865 steadily increased",
+       caption = "Source: U.S. Census | github: julia-tache | June 21st, 2022") +
+  transition_time(as.integer(year)) +
+  ease_aes('linear')
+
+animate(census_region_plot, duration = 5, fps = 20, width = 500, height = 400, renderer = gifski_renderer())
+
+anim_save("census_region_plot.gif")
+```
+
+```{r refine categories}
+firsts$category <- str_replace(firsts$category, "Sports", "Arts, Entertainment, Sports")
+firsts$category <- str_replace(firsts$category, "Arts & Entertainment", "Arts, Entertainment, Sports")
+firsts$category <- str_replace(firsts$category, "(Law|Politics)", "Law and Politics")
+```
+
+```{r bar graph}
+firsts$century <- paste0(substr(firsts$year, 1, 2), "00s")
+firsts$gender <- str_extract(firsts$gender, "Female")
+firsts$gender[is.na(firsts$gender)] <- "Male"
+
+firsts_graph <- firsts %>%
+  filter(century > 1799) %>%
+  group_by(century, category, gender) %>%
+  tally() %>%
+  group_by(century, gender) %>%
+  mutate(total = sum(n)) %>%
+  mutate(percent = round(n/total, digits = 3)*100)
+
+firsts_graph$gender <- factor(firsts_graph$gender, levels = c("Female", "Male"))
+firsts_graph$category <- factor(firsts_graph$category, levels = c("Arts, Entertainment, Sports", 
+                                                                  "Education & Science",
+                                                                  "Law and Politics",
+                                                                  "Military",
+                                                                  "Religion",
+                                                                  "Social & Jobs"))
+firsts_graph$percent_label <- paste0(as.character(round(firsts_graph$percent, digits = 0), 0), "%")
+
+ggplot(firsts_graph, aes(x = gender, y = percent)) +
+  geom_bar(aes(fill = category), color = "black", position = "stack", stat = "identity") +
+  facet_wrap(~century, dir = "v", switch="both") + 
+  geom_text(aes(label = percent_label, group = category), position = position_stack(vjust = 0.5), size = 2) + 
+  coord_flip() + 
+  scale_y_reverse() + 
+  theme_minimal() + 
+  scale_fill_manual(values = c("Arts, Entertainment, Sports" = "#dc143c", 
+                               "Education & Science" = "#ffd700", 
+                               "Law and Politics" = "#00aa00", 
+                               "Military" = "#d2b48c", 
+                               "Religion" = "#ffc0cb", 
+                               "Social & Jobs" = "#FFFFFF"))  +
+  ggtitle("AFRICAN-AMERICAN FIRSTS") + 
+  xlab("Century") +
+  labs(subtitle = "Categories of pioneering achievements by Black scientists,\n lawyers, artists, etc. broken down by the gend",
+       caption = "Source: Black Past | github: julia-tache | June 21st, 2022") +
+  theme(legend.position="top", 
+        legend.title = element_blank(), 
+        plot.title = element_text(hjust = 0.5, size = 12, face = "bold"),
+        axis.title.x = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_text(hjust = 1),
+        axis.ticks.x = element_blank(),
+        axis.ticks.y = element_blank(), 
+        plot.subtitle = element_text(hjust = 0.5),
+        strip.placement = "outside") + 
+  theme(panel.grid.major = element_line(size = 0.5, linetype = "solid",
+                                colour = "white"),
+        panel.grid.minor = element_line(size = 0.5, linetype = "solid",
+                                colour = "white"))
+
+ggsave("firsts.png")
+```
