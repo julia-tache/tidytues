@@ -1,0 +1,157 @@
+---
+title: "Tidy Tuesday - Week 26 (2022)"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+
+library(tidyverse)
+library(tidytuesdayR)
+library(reshape2)
+library(scales)
+
+tuesdata <- tidytuesdayR::tt_load(2022, week = 26)
+paygap <- tuesdata$paygap 
+
+```
+
+```{r quartile dot and line graph}
+
+paygap_wide <- select(paygap, male_lower_quartile, female_lower_quartile, employer_size, diff_mean_hourly_percent)
+
+paygap_long <- melt(paygap_wide, 
+                    id.vars = c("employer_size", "diff_mean_hourly_percent"),
+                    variable.name = "Male vs. Female",
+                    value.name = "Percent")
+
+paygap_long <- paygap_long %>%
+  filter(employer_size != "Not Provided") %>%
+  group_by(employer_size, `Male vs. Female`) %>%
+  summarize(avg_lower_quartile = mean(Percent, na.rm = TRUE),
+            avg_paygap = mean(diff_mean_hourly_percent)) %>%
+  rename("Employer Size" = "employer_size")
+
+paygap_long$avg_lower_quartile <- round(paygap_long$avg_lower_quartile/100, 2)
+paygap_long$avg_paygap <- as.character(round(paygap_long$avg_paygap))
+
+paygap_long$avg_paygap <- paste0(paygap_long$avg_paygap, "%")
+paygap_long$`Employer Size` <- paste0(paygap_long$`Employer Size`, " (", paygap_long$avg_paygap, ")")
+
+paygap_long$`Employer Size` <- factor(paygap_long$`Employer Size`, 
+       levels = c("Less than 250 (14%)", 
+                  "250 to 499 (14%)", 
+                  "500 to 999 (14%)",
+                  "1000 to 4999 (14%)",
+                  "5000 to 19,999 (15%)",
+                  "20,000 or more (13%)"))
+
+ggplot(paygap_long, aes(x = avg_lower_quartile, 
+                        y = `Employer Size`, 
+                        color = `Male vs. Female`)) + 
+  geom_point() +
+  geom_line(aes(group = `Employer Size`), color = "black") +
+  xlab("") + 
+  ylab("Employer Size (Paygap %)") +
+  scale_x_continuous(breaks = pretty_breaks(10)) +
+  labs(title = "Percent of Workers in the Lowest Quartile \nof Earnings by Sex and Employer Size (UK)",
+       caption = "Source: gender-pay-gap.service.gov.uk | github: julia-tache | June 28th, 2022") +
+  theme_bw() + 
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, face = "bold"),
+        plot.caption = element_text(hjust = 0.5))
+
+ggsave("quartiles.png")
+
+```
+
+```{r prepare SIC data}
+
+SIC_codes <- as.data.frame(read_csv("SIC07_CH_condensed_list_en.csv"))
+SIC_codes <- rename(SIC_codes, "sic_codes" = "SIC Code")
+paygap$sic_codes <- gsub(":.*","", paygap$sic_codes)
+
+paygap <- left_join(paygap, SIC_codes, by = "sic_codes")
+
+paygap_ind <- select(paygap, diff_median_hourly_percent, Description)
+
+paygap_top_10 <- paygap_ind %>%
+  group_by(Description) %>%
+  summarize(med_paygap = median(diff_median_hourly_percent, na.rm = TRUE)) %>%
+  arrange(desc(med_paygap))
+
+paygap_top_10 <- paygap_top_10[1:10, ]
+paygap_top_10$paygap_labels <- paste0(as.character(round(paygap_top_10$med_paygap)), "%")
+paygap_top_10$med_paygap <- (paygap_top_10$med_paygap/100)
+paygap_top_10$Description <- factor(paygap_top_10$Description, 
+                                    levels = paygap_top_10$Description[order(paygap_top_10$med_paygap)])
+
+paygap_bottom_10 <- paygap_ind %>%
+  group_by(Description) %>%
+  summarize(med_paygap = median(diff_median_hourly_percent, na.rm = TRUE)) %>%
+  arrange(med_paygap)
+
+paygap_bottom_10 <- paygap_bottom_10[1:10, ]
+paygap_bottom_10$paygap_labels <- paste0(as.character(round(paygap_bottom_10$med_paygap*-1)), "%")
+paygap_bottom_10$med_paygap <- ((paygap_bottom_10$med_paygap*-1)/100)
+paygap_bottom_10$Description <- factor(paygap_bottom_10$Description, 
+                                    levels = paygap_bottom_10$Description[order(paygap_bottom_10$med_paygap)])
+
+```
+
+
+```{r SIC bar graphs}
+
+ggplot(paygap_top_10, 
+       aes(x = med_paygap, y = Description)) + 
+  geom_col(position = position_dodge(), fill = "dark green") +
+  geom_text(aes(label = paygap_labels), 
+            position = position_dodge(0.1), 
+            vjust = 0.5, 
+            hjust = 1.5,
+            size = 3, 
+            color = "#ffffff") +
+  xlab("Median Hourly Paygap") + 
+  ylab("") +
+  scale_x_continuous(breaks = pretty_breaks(10)) +
+  labs(title = "Industries which Pay \nMen the Most (UK)",
+       caption = "Source: gender-pay-gap.service.gov.uk | github: julia-tache") +
+  theme_bw() + 
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, face = "bold"),
+        plot.caption = element_text(hjust = 0.5))
+
+ggsave("top_ind_men.png")
+
+ggplot(paygap_bottom_10, 
+       aes(x = med_paygap, y = Description)) + 
+  geom_col(position = position_dodge(), fill = "dark green") +
+  geom_text(aes(label = paygap_labels), 
+            position = position_dodge(0.1), 
+            vjust = 0.5, 
+            hjust = 1.5,
+            size = 3, 
+            color = "#ffffff") +
+  xlab("Median Hourly Paygap") + 
+  ylab("") +
+  scale_x_continuous(breaks = pretty_breaks(10)) +
+  labs(title = "Industries which Pay \nWomen the Most (UK)",
+       caption = "Source: gender-pay-gap.service.gov.uk | github: julia-tache") +
+  theme_bw() + 
+  theme(panel.background = element_blank(),
+        panel.grid.major = element_blank(), 
+        panel.grid.minor = element_blank(),
+        plot.title = element_text(hjust = 0.5, face = "bold"),
+        plot.caption = element_text(hjust = 0.5))
+
+ggsave("top_ind_women.png")
+
+```
+
