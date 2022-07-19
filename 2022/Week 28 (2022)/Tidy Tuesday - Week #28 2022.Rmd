@@ -1,0 +1,193 @@
+---
+title: 'Tidy Tuesday - Week #28 2022'
+author: "Julia Tache"
+date: '2022-07-19'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+library(tidyverse)
+library(tidytuesdayR)
+library(emoGG)
+library(scales)
+
+flights <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-07-12/flights.csv')
+
+head(flights)
+```
+
+```{r prep data}
+
+flights_2020 <- flights %>%
+  filter(STATE_NAME == "Romania") %>%
+  filter(YEAR == 2020) %>%
+  group_by(YEAR, MONTH_NUM) %>%
+  summarize(n = sum(FLT_TOT_1)) %>%
+  rename("Number of Flights" = "n")
+
+flights_2020$MONTH_NUM <- month.abb[as.numeric(flights_2020$MONTH_NUM)]
+
+flights_2020$MONTH_NUM_labels <- flights_2020$MONTH_NUM
+
+flights_2020$MONTH_NUM <- paste0(flights_2020$MONTH_NUM, " '20")
+
+flights_2021 <- flights %>%
+  filter(STATE_NAME == "Romania") %>%
+  filter(YEAR == 2021) %>%
+  group_by(YEAR, MONTH_NUM) %>%
+  summarize(n = sum(FLT_TOT_1)) %>%
+  rename("Number of Flights" = "n")
+
+flights_2021$MONTH_NUM <- month.abb[as.numeric(flights_2021$MONTH_NUM)]
+
+flights_2021$MONTH_NUM_labels <- flights_2021$MONTH_NUM
+
+flights_2021$MONTH_NUM <- paste0(flights_2021$MONTH_NUM, " '21")
+
+flights_2020_21 <- rbind(flights_2020, flights_2021)
+
+```
+
+
+```{r prep data 2}
+
+flights_2019_1 <- flights %>%
+  filter(STATE_NAME == "Romania") %>%
+  filter(YEAR == 2019) %>%
+  group_by(YEAR, MONTH_NUM) %>%
+  summarize(n = sum(FLT_TOT_1))
+
+flights_2019_2 <- flights %>%
+  filter(STATE_NAME == "Romania") %>%
+  filter(YEAR == 2019) %>%
+  group_by(YEAR, MONTH_NUM) %>%
+  summarize(n = sum(FLT_TOT_1))
+
+flights_2019 <- rbind(flights_2019_1, flights_2019_2) %>%
+  rename("YEAR 2" = "YEAR") %>%
+  rename("MONTH_NUM 2" = "MONTH_NUM") %>%
+  rename("Number of Flights (2019)" = "n")
+
+flights_2019$`MONTH_NUM 2` <- month.abb[as.numeric(flights_2019$`MONTH_NUM 2`)]
+
+flights_2019$`MONTH_NUM 2` <- paste0(flights_2019$`MONTH_NUM 2`, " '19")
+
+flights_graph <- cbind(flights_2020_21, flights_2019) %>%
+  mutate(`Percent Change` = (`Number of Flights` - `Number of Flights (2019)`) / `Number of Flights (2019)`)
+
+flights_graph$`Percent Change` <- flights_graph$`Percent Change` * 100
+
+flights_graph$MONTH_NUM <- factor(flights_graph$MONTH_NUM, levels=unique(flights_graph$MONTH_NUM))
+
+flights_graph$y_value <- c(0, 
+                           12000, 
+                           0, 
+                           12000,
+                           0, 
+                           12000,
+                           0, 
+                           12000,
+                           0, 
+                           12000,
+                           0, 
+                           12000,
+                           0, 
+                           12000,
+                           0, 
+                           12000,
+                           0, 
+                           12000,
+                           0, 
+                           12000,
+                           0, 
+                           12000,
+                           0, 
+                           12000)
+
+flights_graph$`Percent Change (Graph)` <- 100 + flights_graph$`Percent Change`
+
+flights_graph$point_labels <- paste0(as.character(round(flights_graph$`Percent Change`, digits = 0)), "%")
+
+flights_graph$MONTH_NUM_num <- as.numeric(flights_graph$MONTH_NUM)
+
+```
+
+
+```{r bar graph}
+
+flights_graph %>%
+  ggplot(aes(x = `MONTH_NUM`, y = y_value)) +
+  geom_bar(aes(fill = y_value), stat = "identity", alpha = 0) +
+  annotate("rect", fill = "#D3D3D3", alpha = 1, 
+           xmin = as.numeric(flights_graph$MONTH_NUM[[7]]) + 0.5, 
+           xmax = as.numeric(flights_graph$MONTH_NUM[[9]]) - 0.5,
+           ymin = -Inf, 
+           ymax = Inf) +
+  annotate("rect", fill = "#D3D3D3", alpha = 1, 
+           xmin = as.numeric(flights_graph$MONTH_NUM[[19]]) + 0.5, 
+           xmax = as.numeric(flights_graph$MONTH_NUM[[21]]) - 0.5,
+           ymin = -Inf, 
+           ymax = Inf) +
+  geom_bar(aes(x = MONTH_NUM, y = `Number of Flights`), stat = "identity", width = 0.6, 
+           fill = "#9DD9F3", show.legend = FALSE) +
+  geom_line(aes(x = MONTH_NUM, y = 120*`Percent Change (Graph)`), 
+            stat = "identity", 
+            color = "white",
+            group = 1,
+            size = 2) +
+  geom_emoji(aes(x = MONTH_NUM, y = 120*`Percent Change (Graph)`), emoji = "2708", size = 0.04) +
+  geom_text(aes(x = MONTH_NUM, y = 120*`Percent Change (Graph)`, 
+                label = point_labels),
+            fontface = "bold", 
+            size = 3,
+            vjust = -1,
+            color = "#FF2400") +
+  scale_x_discrete(labels = flights_graph$MONTH_NUM_labels) +
+  scale_y_continuous(limits = c(0, 13500), expand = c(0, 0), breaks = pretty_breaks(n = 5)) +
+  ylab("Number of Flights") +
+  labs(title = "Commercial Flights to and from \nRomania in 2020 and 2021",
+       subtitle = "Number of departing and arriving flights from all airports, \nplus % change compared with the same month in 2019",
+       caption = "Source: Eurocontrol | github: julia-tache | July 19th, 2022") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        panel.background = element_rect(fill = "#ECECEC"),
+        plot.background = element_rect(fill = "#D3D3D3"),
+        strip.background = element_rect(fill = "light gray"),
+        legend.position = "none",
+        plot.title = element_text(hjust = 1, size = 20, face = "bold"),
+        plot.subtitle = element_text(hjust = 1, size = 12, face = "italic"),
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(face = c("plain",
+                                            "plain",
+                                            "plain",
+                                            "plain",
+                                            "plain",
+                                            "plain",
+                                            "plain",
+                                            "bold",
+                                            "plain",
+                                            "plain",
+                                            "plain",
+                                            "plain",
+                                            "plain",
+                                            "plain",
+                                            "plain",
+                                            "plain",
+                                            "plain",
+                                            "plain",
+                                            "plain",
+                                            "bold",
+                                            "plain",
+                                            "plain",
+                                            "plain",
+                                            "plain")))
+
+ggsave("bar_chart.png")
+
+```
+
+
