@@ -1,0 +1,136 @@
+---
+title: "Tidy Tuesday - Week 31 (2022)"
+output: html_document
+date: '2022-08-09'
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+library(tidyverse)
+library(tidytuesdayR)
+library(countrycode)
+
+wheels <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-08-09/wheels.csv')
+
+head(wheels)
+
+```
+
+```{r}
+wheels %>%
+  arrange(desc(height))
+
+wheels_circle_bar <- wheels %>%
+  group_by(country) %>%
+  summarize(med_height = median(height, na.rm = TRUE)) %>%
+  arrange(desc(med_height))
+
+wheels_circle_bar$country <- str_replace(wheels_circle_bar$country, "Phillippines", "Philippines")
+wheels_circle_bar$country <- str_replace(wheels_circle_bar$country, "Tailand", "Thailand")
+
+wheels_circle_bar$continent <- countrycode(sourcevar = wheels_circle_bar$country,
+                            origin = "country.name",
+                            destination = "continent")
+
+wheels_circle_bar$continent <- replace_na(wheels_circle_bar$continent, "Asia")
+
+```
+
+```{r}
+library(png)
+library(patchwork) 
+
+# code help from https://r-graph-gallery.com/297-circular-barplot-with-groups.html
+
+wheels_circle_bar$country <- paste(wheels_circle_bar$country, round(wheels_circle_bar$med_height), sep = ", ")
+wheels_circle_bar$country <- paste0(wheels_circle_bar$country, "ft")
+
+img1 <- readPNG("ferris.png", native = TRUE)
+
+wheels_circle_bar <- arrange(wheels_circle_bar, continent)
+empty_bar <- 1
+to_add <- data.frame(matrix(NA, empty_bar*nlevels(as.factor(wheels_circle_bar$continent)), ncol(wheels_circle_bar)))
+colnames(to_add) <- colnames(wheels_circle_bar)
+to_add$continent <- rep(levels(as.factor(wheels_circle_bar$continent)), each = empty_bar)
+wheels_circle_bar <- rbind(wheels_circle_bar, to_add)
+wheels_circle_bar <- wheels_circle_bar %>% arrange(continent)
+wheels_circle_bar$id <- seq(1, nrow(wheels_circle_bar))
+ 
+label_data <- wheels_circle_bar
+number_of_bar <- nrow(label_data)
+angle <- 90 - 360 * (label_data$id-0.5) /number_of_bar
+label_data$hjust <- ifelse(angle < -90, 1, 0)
+label_data$angle <- ifelse(angle < -90, angle+180, angle)
+ 
+ggplot(wheels_circle_bar, aes(x = as.factor(id), y = med_height, fill = continent)) +
+  geom_hline(aes(yintercept = y), 
+             data.frame(y = c(0:7) * 200),
+             color = "lightgrey") +
+  geom_bar(stat = "identity", alpha = 0.75) +
+  scale_fill_manual(name = "Continent", values=c("#F60E26","#F2337B","#F6D003","#077DDF")) +
+  ylim(-400, 850) +
+  theme(axis.text = element_blank(),
+        axis.title = element_blank(),
+        panel.grid = element_blank(),
+        panel.background = element_rect(fill = "white", color = "white"),
+        plot.margin = margin(t = 0,  # Top margin
+                             r = 0,  # Right margin
+                             b = 0,  # Bottom margin
+                             l = 0)) +
+  coord_polar() +
+  geom_text(data = label_data, 
+            aes(x = id, y = med_height+7, label = country, hjust = hjust), 
+            color = "black", 
+            size = 2, 
+            angle = label_data$angle, 
+            inherit.aes = FALSE ) +
+  annotate(
+    x = 28, 
+    y = 410, 
+    label = "400ft", 
+    geom = "text", 
+    size = 2,
+    fontface = "bold"
+  ) +
+  annotate(
+    x = 28, 
+    y = 610, 
+    label = "600ft", 
+    geom = "text", 
+    size = 2.5,
+    fontface = "bold"
+  ) +
+  annotate(
+    x = 28, 
+    y = 810, 
+    label = "800ft", 
+    geom = "text", 
+    size = 3,
+    fontface = "bold"
+  ) +
+  labs(title = "\nMedian Ferris Wheel Height by Country",
+       subtitle =
+      "Dubai clearly takes the (funnel) cake, but the tallest ferris wheel in the dataset is \nThe Golden Gate Flyer, which stands at 728 feet. (The Ain Dubai,\n opened in 2021, is the tallest wheel in the world at 820 feet)",
+      caption = "Source: Emil Hvitfeldt | github: julia-tache | Aug 9th, 2022") +
+  theme(plot.title = element_text(hjust = 0, size = 8, face = "bold"),
+        plot.subtitle = element_text(hjust = 0, size = 6, face = "italic"),
+        plot.caption = element_text(size = 6),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 6),
+        axis.title = element_blank(),
+        axis.ticks = element_blank(),
+        axis.text.y = element_blank(),
+        legend.position = "bottom",
+        legend.key.size = unit(0.5, 'cm')) +
+  inset_element(p = img1,
+                left = 0.40,
+                bottom = 0.42,
+                right = 0.60,
+                top = 0.58) 
+
+ggsave("ferris_wheel_plot.png")
+
+```
