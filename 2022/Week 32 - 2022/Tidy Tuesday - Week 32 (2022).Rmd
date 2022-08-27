@@ -1,5 +1,5 @@
 ---
-title: "Tidy Tuesday - Week 31 (2022)"
+title: "Tidy Tuesday - Week 32 (2022)"
 output: html_document
 date: '2022-08-09'
 ---
