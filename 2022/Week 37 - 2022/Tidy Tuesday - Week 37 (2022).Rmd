@@ -72,11 +72,14 @@ im_A <- ggplot() +
 plot <- ggarrange(im_A, map,
           ncol = 2, nrow = 1,
           widths = c(0.75, 1)) +
-  bgcolor("white")
+  bgcolor("white") +
+  border(color = "white")
 
 final_plot <- annotate_figure(plot, top = text_grob("Bigfoot Sightings by State and Season", 
                                       face = "bold",
-                                      size = 14))
+                                      size = 14)) 
+
+final_plot
 
 ggsave("finalplot.png", width = 8, height = 5)
 
