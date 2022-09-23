@@ -50,13 +50,15 @@ near_water$COAST_50KM <- ifelse(near_water$COAST_50KM == 1, "<50km Away from Oce
 ggplot(near_water, aes(x = reorder(REGION, n), y = n, fill = COAST_50KM)) +
   geom_bar(stat = "identity", position = position_dodge(), color = "black") +
   scale_fill_manual(values=c("#7DF9FF", "#39FF14")) +
-  labs(title = "How far are WWTPs from large bodies of water?") +
+  labs(title = "How far are WWTPs from large bodies of water?",
+       caption = "Source: Macedo et al, 2022 | github: julia-tache | Sep 22nd, 2022") +
   ylab("Number of WWTPs") +
   theme(panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         plot.background = element_rect(fill = "black", color = NA),
         panel.background = element_rect(fill = "black"),
         plot.title = element_text(hjust = 0.5, color = "white", face = "bold"),
+        plot.caption = element_text(color = "white", size = 8, hjust = 0.5),
         legend.title = element_blank(),
         legend.position = "bottom",
         legend.background = element_rect(fill = "black"),
