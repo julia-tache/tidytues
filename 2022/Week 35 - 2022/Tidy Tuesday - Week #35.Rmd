@@ -1,0 +1,148 @@
+---
+title: 'Tidy Tuesday - Week #35'
+author: "Julia Tache"
+date: '2022-08-30'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load packages and data}
+
+library(tidytuesdayR)
+library(tidyverse)
+library(scales)
+library(maps)
+library(usdata)
+library(ggthemes)
+library(reshape2)
+library(Rcpp)
+library(ggpubr)
+
+pell <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-08-30/pell.csv')
+
+head(pell)
+
+```
+
+```{r prepare data for mapping}
+
+pell_map <- pell %>%
+  filter(YEAR > 2007) %>%
+  filter(YEAR < 2013) %>%
+  group_by(YEAR, STATE) %>%
+  summarize(total_rec = sum(RECIPIENT), total_award = sum(AWARD)) %>%
+  rename("region" = "STATE")
+
+pell_map$total_award_by_rec <- pell_map$total_award / pell_map$total_rec
+
+pell_map$region <- abbr2state(pell_map$region)
+pell_map$region <- tolower(pell_map$region)
+
+us_states <- map_data("state")
+
+pell_map_joined <- left_join(us_states, pell_map, by = "region")
+
+```
+
+
+```{r recipient map}
+
+map <- ggplot(data = pell_map_joined,
+       aes(x = long, y = lat,
+           group = group, fill = total_rec)) +
+  geom_polygon(color = "black", size = 0.1) +
+  coord_map(projection = "albers", lat0 = 39, lat1 = 45) +
+  theme_map() +
+  facet_wrap(~YEAR, ncol = 5) +
+  theme(title = element_blank(),
+        legend.position = "right",
+        legend.background = element_rect(fill = "#f0f0f0"),
+        legend.key.size = unit(0.25, "cm"),
+        strip.background = element_rect(fill = "#69b3a2")) +
+  labs(fill = "Recipients") +
+  scale_fill_gradient(low = "#f0f0f0", high = "#69b3a2", labels = comma)
+
+```
+
+```{r prepare data for line graph}
+
+pell_line <- pell %>%
+  group_by(YEAR) %>%
+  summarize(total_rec = sum(RECIPIENT), total_award = sum(AWARD, na.rm = TRUE))
+
+pell_line$total_award_by_rec <- pell_line$total_award / pell_line$total_rec
+
+pell_line <- pell_line %>%
+  select(-total_award)
+
+```
+
+
+```{r recipient and award line graph}
+
+coeff <- 0.0009
+recColor <- "#69b3a2"
+amountColor <- rgb(0.2, 0.6, 0.9, 1)
+
+line_plot <- ggplot(pell_line, aes(x = YEAR)) +
+  geom_line(aes(y = total_rec), color = recColor, group = 1) + 
+  geom_line(aes(y = total_award_by_rec / coeff), color = amountColor, group = 1) +
+  geom_point(aes(y = total_rec), color = recColor) + 
+  geom_point(aes(y = total_award_by_rec / coeff), color = amountColor) +
+  geom_label(label = "6,398,753\n(2008)", 
+             x = 2009.5,
+             y = 6500000,
+             label.padding = unit(0.2, "lines"),
+             label.size = 0.35,
+             color = "black",
+             fill = recColor) +
+  geom_label(label = "9,444,368\n(2011)", 
+             x = 2012.5,
+             y = 8800000,
+             label.padding = unit(0.2, "lines"),
+             label.size = 0.35,
+             color = "black",
+             fill = recColor) +
+  geom_label(aes(label = "$1,960 \n(2000)", 
+                 x = 2000,
+                 y = 3300000),
+             label.padding = unit(0.2, "lines"),
+             label.size = 0.35,
+             color = "black",
+             fill = "light blue") +
+  geom_label(aes(label = "$4,031 \n(2017)", 
+                 x = 2016.5,
+                 y = 5700000),
+             label.padding = unit(0.2, "lines"),
+             label.size = 0.35,
+             color = "black",
+             fill = "light blue") +
+  theme_fivethirtyeight() +
+  ggtitle("Pell Grants over Two Decades") +
+  labs(subtitle = "The number of Pell Grant recipients shot up during the recession in 2008 and \nthe amount granted to each recipient has more than doubled from 2000 to 2017.",
+       caption = "Source: US Dept of Education | github: julia-tache | Aug 30th, 2022") +
+  theme(axis.title.y = element_text(color = temperatureColor),
+        axis.title.y.right = element_text(color = priceColor),
+        plot.caption = element_text(hjust = 1)) +
+  scale_x_continuous(breaks = scales::pretty_breaks(n = 10)) +
+  scale_y_continuous(name = "Number of Pell Grant Recipients",
+                     sec.axis = sec_axis(~.*coeff, name="Amount per Recipient",
+                                         breaks = scales::pretty_breaks(n = 5), 
+                                         labels = dollar)) 
+
+```
+
+```{r ggarrange}
+
+full_plot <- ggarrange(map, line_plot, heights = c(1, 3),
+          ncol = 1, nrow = 2) +
+  bgcolor("#f0f0f0") +
+  border(color = "#f0f0f0")
+
+ggsave("full_plot.png", full_plot, width = 8, height = 5)
+
+```
+

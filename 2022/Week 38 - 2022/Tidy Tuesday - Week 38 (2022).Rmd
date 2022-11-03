@@ -1,0 +1,247 @@
+---
+title: "Tidy Tuesday - Week 38 (2022)"
+author: "Julia Tache"
+date: '2022-09-21'
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+library(tidyverse)
+library(tidytuesdayR)
+library(countrycode)
+library(scales)
+library(ggpubr)
+
+HydroWASTE_v10 <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2022/2022-09-20/HydroWASTE_v10.csv')
+HydroWaste <- tuesdata$HydroWASTE_v10
+
+head(HydroWaste)
+
+```
+
+```{r region-level data}
+
+HydroWaste$COUNTRY <- str_replace(HydroWaste$COUNTRY, "Cura\xe7ao", "Curacao")
+HydroWaste$COUNTRY <- str_replace(HydroWaste$COUNTRY, "C\xf4te d'Ivoire", "Cote d'Ivoire")
+
+HydroWaste$REGION <- countrycode(sourcevar = HydroWaste[["COUNTRY"]],
+                            origin = "country.name",
+                            destination = "region")
+
+```
+
+```{r bargraph - near lake or ocean}
+
+near_water <- HydroWaste %>%
+  filter(REGION != "Middle East & North Africa") %>% # get rid of outlier regions
+  filter(REGION != "South Asia") %>%
+  filter(REGION != "Sub-Saharan Africa") %>%
+  group_by(REGION, COAST_50KM) %>%
+  tally()
+
+near_water <- na.omit(near_water)
+
+near_water$COAST_50KM <- ifelse(near_water$COAST_50KM == 1, "<50km Away from Ocean/Lake", ">50km Away from Ocean/Lake")
+
+ggplot(near_water, aes(x = reorder(REGION, n), y = n, fill = COAST_50KM)) +
+  geom_bar(stat = "identity", position = position_dodge(), color = "black") +
+  scale_fill_manual(values=c("#7DF9FF", "#39FF14")) +
+  labs(title = "How far are WWTPs from large bodies of water?",
+       caption = "Source: Macedo et al, 2022 | github: julia-tache | Sep 22nd, 2022") +
+  ylab("Number of WWTPs") +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.background = element_rect(fill = "black", color = NA),
+        panel.background = element_rect(fill = "black"),
+        plot.title = element_text(hjust = 0.5, color = "white", face = "bold"),
+        plot.caption = element_text(color = "white", size = 8, hjust = 0.5),
+        legend.title = element_blank(),
+        legend.position = "bottom",
+        legend.background = element_rect(fill = "black"),
+        legend.text = element_text(color = "white"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(color = "white"),
+        axis.text.x = element_text(color = "white"),
+        axis.text.y = element_text(color = "white"),
+        text = element_text(family = "Georgia")) +
+    scale_y_continuous(label = comma)
+
+ggsave("barplot1.png")
+
+```
+
+```{r bargraph - river discharge}
+
+riv_waste <- HydroWaste %>%
+  filter(REGION != "Middle East & North Africa") %>%
+  filter(REGION != "South Asia") %>%
+  filter(REGION != "Sub-Saharan Africa") %>%
+  group_by(REGION) %>%
+  summarize(MED_RIV_DIS = median(RIVER_DIS, na.rm = TRUE))
+
+barplot2 <- ggplot(riv_waste, aes(x = reorder(REGION, MED_RIV_DIS), y = MED_RIV_DIS)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill = "#39FF14", color = "black") +
+  labs(title = "Median River Discharge by Region",
+       subtitle = bquote("in"~m^3~s^-1)) +
+  theme(panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.background = element_rect(fill = "black", color = NA),
+        panel.background = element_rect(fill = "black"),
+        panel.border = element_blank(), 
+        axis.line    = element_line(color = "black"),
+        plot.title = element_text(hjust = 0.5, color = "white", face = "bold"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_text(color = "white"),
+        axis.text.y = element_text(color = "white"),
+        text = element_text(family = "Georgia")) +
+  scale_y_continuous(label = comma)
+
+```
+
+```{r}
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+
+HydroWaste_EAP <- HydroWaste %>%
+  filter(REGION == "East Asia & Pacific") %>%
+  filter(LON_WWTP > 0)
+
+HydroWaste_EAP_sf <- st_as_sf(HydroWaste_EAP, coords = c("LON_WWTP", "LAT_WWTP"), crs = 4326)
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+ggplot(data = world) +
+  geom_sf(fill = "white") +
+  geom_point(data = HydroWaste_EAP, aes(x = LON_WWTP, y = LAT_WWTP, color = LEVEL), size = 0.25) +
+  scale_color_manual("Level of Treatment", values = c("#FF69B4", "#7DF9FF", "#39FF14")) +
+  coord_sf(xlim = c(75, 180), ylim = c(-50, 60), expand = TRUE) +
+  guides(color = guide_legend(override.aes = list(size = 4))) +
+  labs(title = "Level of Treatment", 
+       subtitle = "Level of treatment of each WWTP estimated based on the GNI per capita \nper annum categorization as defined by the World Bank for all countries", caption = "Source: Macedo et al, 2022 | github: julia-tache | Sep 22nd, 2022") +
+  scale_y_continuous(label = comma) +
+  theme(panel.border = element_blank(),
+        axis.line    = element_line(color = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.background = element_rect(fill = "black", color = NA),
+        panel.background = element_rect(fill = "black"),
+        legend.background = element_rect(fill = "black"),
+        plot.title = element_text(color = "white", size = 12, face = "bold"),
+        plot.subtitle = element_text(color = "white", size = 9),
+        plot.caption = element_text(color = "white", size = 7, hjust = 0),
+        legend.key = element_rect(fill = "black"),
+        legend.title = element_blank(),
+        legend.text = element_text(color = "white"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        text = element_text(family = "Georgia"))
+
+ggsave("map.png")
+
+```
+
+
+```{r bargraph - dilution factor}
+
+df_10 <- HydroWaste %>%
+  filter(DF <= 10) %>%
+  group_by(REGION) %>%
+  tally() %>%
+  rename("1-10" = "n")
+
+df_100 <- HydroWaste %>%
+  filter(DF >= 11) %>%
+  filter(DF <= 100) %>%
+  group_by(REGION) %>%
+  tally() %>%
+  rename("11-100" = "n")
+  
+df_1000 <- HydroWaste %>%
+  filter(DF >= 101) %>%
+  filter(DF <= 1000) %>%
+  group_by(REGION) %>%
+  tally() %>%
+  rename("101-1,000" = "n")
+
+df_10000 <- HydroWaste %>%
+  filter(DF >= 1001) %>%
+  filter(DF <= 10000) %>%
+  group_by(REGION) %>%
+  tally() %>%
+  rename("1,001-10,000" = "n")
+
+df_100000 <- HydroWaste %>%
+  filter(DF >= 10001) %>%
+  filter(DF <= 100000) %>%
+  group_by(REGION) %>%
+  tally() %>%
+  rename("10,001-100,000" = "n")
+
+df_100001 <- HydroWaste %>%
+  filter(DF >= 100001) %>%
+  group_by(REGION) %>%
+  tally() %>%
+  rename("100,000 or more" = "n")
+
+bins <- cbind(df_10, df_100[, 2], df_1000[, 2], df_10000[, 2], df_100000[, 2], df_100001[, 2])
+
+library(reshape)
+
+region_df <- melt(bins, id.vars = c("REGION"))
+
+region_df <- region_df %>%
+  filter(REGION == "East Asia & Pacific")
+
+barplot3 <- ggplot(region_df, aes(x = variable, y = value)) +
+  geom_bar(stat = "identity", position = position_dodge(), fill = "#7DF9FF", color = "black") +
+  labs(title = "Dilution Factor: East Asia & Pacific") +
+  ylab("Frequency") +
+  geom_vline(xintercept = c(1, 1), linetype="dotted", size = 1, color = "white") +
+  annotate("text", label = "Water Quality \nThreshold DF < 10",
+    x = 1.75, y = 1100, size = 2, colour = "white") +
+  theme(panel.border = element_blank(),
+        axis.line    = element_line(color = "black"),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.background = element_rect(fill = "black", color = NA),
+        panel.background = element_rect(fill = "black"),
+        plot.title = element_text(hjust = 0.5, color = "white", face = "bold"),
+        plot.subtitle = element_text(hjust = 0.5, color = "white"),
+        plot.caption = element_text(hjust = 0.5, size = 6, color = "white"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(color = "white"),
+        axis.text.x = element_text(color = "white"),
+        axis.text.y = element_text(color = "white"),
+        text = element_text(family = "Georgia")) +
+  scale_y_continuous(label = comma)
+
+```
+
+```{r combined plots}
+library(patchwork)
+
+barplot2 + barplot3 + plot_annotation(title = "Waste Water Treatment Plants (WWTPs)", 
+                                      subtitle = "The East Asian and Pacific region has over 700 facilities below the acceptable water \nquality threshold and the highest median river discharge levels of wastewater",
+                                      caption = "Source: Macedo et al, 2022 | github: julia-tache | Sep 22nd, 2022") +
+  plot_layout(ncol = 2, nrow = 1) & 
+  theme(plot.title = element_text(colour  = "white", size = 11, face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(size = 9, hjust = 0.5),
+        plot.caption = element_text(size = 8, hjust = 0.5),
+        plot.background = element_rect(fill = "black", color = "black"),
+        text = element_text(family = "Georgia", color = "white"),
+        axis.text.x = element_text(size = 6, angle = 45, hjust = 1))
+
+ggsave("barplot_combo.png")
+
+```
+
+
+

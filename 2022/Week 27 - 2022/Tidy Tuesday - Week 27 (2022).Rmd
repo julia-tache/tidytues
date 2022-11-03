@@ -1,0 +1,142 @@
+---
+title: "Tidy Tuesday - Week 27 (2022)"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+
+library(tidyverse)
+library(tidytuesdayR)
+library(reshape2)
+library(scales)
+library(wesanderson)
+library(stringr)
+library(ggbump)
+
+tuesdata <- tidytuesdayR::tt_load(2022, week = 27)
+rent <- tuesdata$rent
+sf_permits <- tuesdata$sf_permits
+new_construction <- tuesdata$new_construction
+
+```
+
+```{r graph 1}
+
+new_construction_area <- new_construction %>%
+  select(year, sfproduction, mfproduction, mhproduction, county) %>%
+  filter(county == "Alameda County" | county == "Contra Costa County" | county == "San Francisco County" | county == "Santa Clara County") %>%
+  rename("Single Family Homes" = "sfproduction") %>%
+  rename("Multi-Family Homes" = "mfproduction") %>%
+  rename("Mobile Homes" = "mhproduction")
+
+new_construction_area_graph <- melt(new_construction_area, id.vars = c("year", "county"))
+
+ggplot(new_construction_area_graph, 
+       aes(x = year, y = value, fill = variable)) + 
+    geom_area() +
+  facet_wrap(~county) +
+  ylab("Units Produced") +
+  labs(title = "Historical Trend in Housing Production \nfor four Bay Area Counties",
+       caption = "Source: Kate Pennington | github: julia-tache | July 12th, 2022") +
+  theme(panel.grid.minor = element_blank(),
+        panel.background = element_rect(fill = "#DBF3FA"),
+        legend.title = element_blank(),
+        legend.position = "bottom",
+        axis.title.x = element_blank(),
+        plot.title = element_text(hjust = 0.5, face = "bold", size = 12),
+        plot.caption = element_text(hjust = 0.5),
+        strip.background = element_rect(fill = "light blue"),
+        text = element_text(family = "serif")) +
+  scale_y_continuous(label = comma) +
+  scale_x_continuous(breaks = pretty_breaks(5)) +
+  scale_fill_manual(values = wes_palette("GrandBudapest2", n = 4))
+
+ggsave("area_chart.png")
+
+```
+
+```{r prepare data for graph 2}
+
+# find the top 10 neighborhood with biggest increase in rent
+
+rent_sf_2001_vs_2018 <- rent %>%
+  filter(city == "san francisco") %>%
+  filter(year == 2001 | year == 2018) %>%
+  filter(beds == 2) %>%
+  select(year, nhood, price) %>%
+  group_by(year, nhood) %>%
+  summarize(average_rent = mean(price))
+
+rent_sf_2001_vs_2018_2 <- na.omit(dcast(rent_sf_2001_vs_2018, nhood ~ year, value.var = "average_rent")) %>%
+  mutate(difference = `2018` - `2001`) %>%
+  arrange(desc(difference))
+
+# rent_sf_2001_vs_2018_2
+
+rent_change <- rent %>%
+  filter(beds == 2) %>%
+  filter(year != 2000) %>%
+  filter(nhood == "SOMA / south beach" | 
+         nhood == "lower pac hts" |
+         nhood == "castro" |
+         nhood == "lower haight" |
+         nhood == "mission district") %>%
+  filter(city == "san francisco") %>%
+  group_by(year, nhood) %>%
+  summarize(average_rent = round(mean(price, na.rm = TRUE), digits = 2))
+
+rent_change$nhood <- str_to_title(rent_change$nhood)
+
+```
+
+
+```{r graph 2}
+
+# reworked code from https://rforpoliticalscience.com/2020/07/26/make-wes-anderson-themed-graphs-with-wesanderson-package-in-r/
+
+rent_change %>% 
+  ggplot(aes(x = year, y  = average_rent, 
+             group = nhood,
+             color = nhood, fill = nhood)) +
+  geom_bump(aes(), 
+            smooth = 7,
+            size = 1, alpha = 0.9) + 
+  geom_point(aes(color = nhood), fill = "white", 
+             shape = 21, size = 1, stroke = 1) +
+  labs(title = "Change in Average SF Rent for 2-Bedroom Apartments",
+       subtitle = "Castro, Lower Haight, Lower Pacific Heights, Mission District, and SOMA \nneighborhoods experienced some of the greatest rent increases since 2001",
+       caption = "Source: Kate Pennington | github: julia-tache | July 12th, 2022") + 
+  theme(panel.border = element_blank(),
+        legend.position = "bottom",
+        plot.title = element_text(size = 12, face = "bold"),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 9, color = "white"),
+        axis.text.y = element_text(size = 9), 
+        axis.text.x = element_text(size = 9),
+        legend.background = element_rect(fill = "#404466"),
+        axis.title = element_blank(),
+        axis.text = element_text(color = "white", size = 8),
+        text = element_text(size = 10, color = "white"),
+        panel.grid.major.y = element_blank(),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        legend.key = element_rect(fill = "#404466"),
+        plot.background = element_rect(fill = "#404466"),
+        panel.background = element_rect(fill = "#404466")) +
+  scale_x_continuous(breaks = seq(2001, 2018, by = 4)) +
+  scale_y_continuous(breaks = seq(0, 6000, by = 500),
+                     labels = dollar_format()) +
+  scale_color_manual(values = wes_palette("Moonrise3", n = 5))
+
+ggsave("bump_graph.png")
+
+```
+
+
+
+

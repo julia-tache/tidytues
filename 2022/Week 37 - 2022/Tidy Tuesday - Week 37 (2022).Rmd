@@ -1,0 +1,87 @@
+---
+title: "Tidy Tuesday - Week 37 (2022)"
+output: html_document
+date: '2022-09-14'
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+library(tidyverse)
+library(tidytuesdayR)
+library(statebins)
+library(hrbrthemes)
+library(wesanderson)
+library(png)
+library(ggpubr)
+
+tuesdata <- tidytuesdayR::tt_load('2022-09-13')
+bigfoot <- tuesdata$bigfoot
+
+head(bigfoot)
+
+```
+```{r statebin map}
+
+bigfoot_bin <- bigfoot %>%
+  filter(season != "Unknown") %>%
+  group_by(state, season) %>%
+  tally() %>%
+  rename("Sightings" = "n")
+
+bigfoot_bin$season <- factor(bigfoot_bin$season, levels = c("Fall", "Winter", "Spring", "Summer"))
+
+pal <- wes_palette("Moonrise1", type = "continuous")
+
+map <- ggplot(bigfoot_bin, aes(state = state, fill = Sightings)) +
+  geom_statebins(border_col = "black",
+                 border_size = 0.5,
+                 radius = grid::unit(3, "pt"),
+                 lbl_size = 2) +
+  coord_equal() +
+  scale_fill_gradientn(colours = pal) + 
+  facet_wrap(~season) +
+  labs(caption = "Source: Bigfoot Field Researchers Organization (BFRO) | github: julia-tache | Sep 13th, 2022") +
+    theme(panel.background = element_rect(fill = "white"),
+          panel.border = element_blank(), 
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          plot.caption = element_text(hjust = 0.5, size = 6),
+          legend.title = element_blank(),
+          legend.text = element_text(size = 7),
+          axis.title = element_blank(),
+          axis.ticks = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          legend.position = "bottom",
+          text = element_text(family = "Roboto"))
+
+```
+
+
+```{r mixed plot}
+
+img1 <- readPNG("bigfoot.png")
+im_A <- ggplot() + 
+  background_image(img1) +
+  theme(plot.margin = margin(t = 1, l = 1, r = 1, b = 1, unit = "cm"),
+        panel.background = element_rect(fill = "white")) 
+
+plot <- ggarrange(im_A, map,
+          ncol = 2, nrow = 1,
+          widths = c(0.75, 1)) +
+  bgcolor("white") +
+  border(color = "white")
+
+final_plot <- annotate_figure(plot, top = text_grob("Bigfoot Sightings by State and Season", 
+                                      face = "bold",
+                                      size = 14)) 
+
+final_plot
+
+ggsave("finalplot.png", width = 8, height = 5)
+
+```
+
