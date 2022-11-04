@@ -1,0 +1,166 @@
+---
+title: "Tidy Tuesday - Week 44 (2022)"
+author: "Julia Tache"
+date: '2022-11-03'
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+library(tidyverse)
+library(tidytuesdayR)
+library(countrycode)
+library(scales)
+library(ggpubr)
+library(reshape2)
+library(showtext)
+library(ggrepel)
+
+tuesdata <- tidytuesdayR::tt_load("2022-11-01")
+horror_movies <- tuesdata$horror_movies
+
+head(horror_movies)
+
+```
+
+```{r average film length}
+
+font_add_google(name = "Creepster", family = "Creepster")
+showtext_auto()
+
+horror_movies$release_year <- as.numeric(substr(horror_movies$release_date, 1, 4))
+
+horror_movies_graph <- horror_movies %>%
+  filter(original_language == "en") %>%
+  filter(release_year >= 1960) %>%
+  filter(release_year <= 2019) %>%
+  filter(runtime >= 60) %>% # exclude anything under 1 hour
+  filter(runtime < 199) # exclude anything over ~3.5 hours
+
+horror_movies_graph$release_decade <- as.numeric(paste0(substr(horror_movies_graph$release_date, 1, 3), "0"))
+
+horror_movies_graph$title_year <- paste0(horror_movies_graph$title, " ", "(", horror_movies_graph$release_year, ")")
+
+arrange(horror_movies_graph, desc(runtime))
+
+horror_movies_dec_run <- horror_movies_graph %>%
+  group_by(release_decade) %>%
+  summarize(med_runtime = round(mean(runtime, na.rm = TRUE), digits = 0),
+            longest_runtime = max(runtime, na.rm = TRUE))
+
+horror_movies_dec_run <- melt(horror_movies_dec_run, id.vars = "release_decade")
+
+horror_movies_dec_run %>%
+  ggplot(aes(x = release_decade, y = value, group = variable, color = variable)) + 
+  geom_line(size = 1.5) +
+  geom_point(size = 3) +
+  geom_label(aes(x = 2000, y = 220, label = "Longest Movie:\nFrankenpimp (2009)\nRuntime: 3h 14m"), color = "black") +
+  scale_color_manual(values = c("orange", "white")) +
+  labs(title = "Average and Longest Horror Movie Runtime by Decade",
+       subtitle = "The tight 90 (mostly) reigns supreme.",
+       caption = "Source: The Movie Database | github: julia-tache | Nov 3rd, 2022") +
+  ylab("Runtime (in min)") +
+  theme(plot.background = element_rect(fill = "black", color = NA),
+        panel.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.x = element_line(size = .1, color = "white"),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.y = element_line(size = .1, color = "white"),
+        plot.title = element_text(hjust = 0.5, color = "white", face = "bold", family = "Creepster", size = 20),
+        plot.subtitle = element_text(color = "orange", hjust = 0.5),
+        plot.caption = element_text(color = "white", size = 8),
+        legend.position = "none",
+        legend.background = element_rect(fill = "black"),
+        legend.text = element_text(color = "white"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_text(color = "white"),
+        axis.text.x = element_text(color = "white"),
+        axis.text.y = element_text(color = "white")) +
+  scale_y_continuous(limits = c(80, 240), breaks = seq(80, 240, by = 20))
+
+ggsave("runtime.png", height = 4, width = 7)
+
+```
+
+```{r top 10 and bottom 10 movie budgets}
+
+horror_movies <- horror_movies[horror_movies$budget != 0, ]
+
+top_10 <- horror_movies %>%
+  arrange(desc(budget))
+
+bottom_10 <- horror_movies %>%
+  filter(budget > 100000) %>%
+  arrange(budget)
+
+top_10 <- top_10[1:10, ] %>%
+  mutate(Rank = "Top 10") %>%
+  mutate(budget = budget/1000)
+bottom_10 <- bottom_10[1:10, ] %>%
+  mutate(Rank = "Bottom_10")
+
+top_10$title_year <- paste0(top_10$title, " ", "(", top_10$release_year, ")")
+bottom_10$title_year <- paste0(bottom_10$title, " ", "(", bottom_10$release_year, ")")
+
+top_10 %>%  
+  ggplot(aes(x = reorder(title_year, budget), y = budget)) + 
+  geom_bar(position = "dodge", stat = "identity", fill = "green") +
+  geom_text(aes(label = dollar(budget)), hjust = 1.2, color = "white") +
+  coord_flip() +
+  labs(title = "Top 10 Movies by Budget (in thousands)",
+       caption = "Source: The Movie Database | github: julia-tache | Nov 3rd, 2022") +
+  ylab("Budget (in thousands)") +
+  theme(plot.background = element_rect(fill = "black", color = NA),
+        panel.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.x = element_line(size = .1, color = "white"),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.y = element_line(size = .1, color = "white"),
+        plot.title = element_text(hjust = 0.5, color = "white", face = "bold", family = "Creepster", size = 20),
+        plot.caption = element_text(color = "white", size = 8),
+        legend.position = "none",
+        legend.background = element_rect(fill = "black"),
+        legend.text = element_text(color = "white"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_text(color = "white"),
+        axis.text.y = element_text(color = "white")) +
+  scale_y_continuous(label = dollar)
+
+ggsave("top10_horror.png")
+  
+bottom_10 %>%  
+  ggplot(aes(x = reorder(title_year, budget), y = budget)) + 
+  geom_bar(position = "dodge", stat = "identity", fill = "dark red") +
+  geom_text(aes(label = dollar(budget)), hjust = 1.2, color = "white") +
+  coord_flip() +
+  labs(title = "Bottom 10 Movies by Budget (above $100k)",
+       caption = "Source: The Movie Database | github: julia-tache | Nov 3rd, 2022") +
+  ylab("Budget (in thousands)") +
+  theme(plot.background = element_rect(fill = "black", color = NA),
+        panel.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.x = element_line(size = .1, color = "white"),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.y = element_line(size = .1, color = "white"),
+        plot.title = element_text(hjust = 0.5, color = "white", face = "bold", family = "Creepster", size = 20),
+        plot.caption = element_text(color = "white", size = 8),
+        legend.position = "none",
+        legend.background = element_rect(fill = "black"),
+        legend.text = element_text(color = "white"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_text(color = "white"),
+        axis.text.y = element_text(color = "white")) +
+  scale_y_continuous(label = dollar)
+
+ggsave("bottom10_horror.png")
+  
+
+```
+
+
+
