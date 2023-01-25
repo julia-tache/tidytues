@@ -1,0 +1,186 @@
+---
+title: "Tidy Tuesday - Week 4 (2023)"
+author: "Julia Tache"
+date: '2023-01-25'
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+
+library(tidyverse)
+library(tidytuesdayR)
+library(countrycode)
+library(scales)
+library(ggpubr)
+library(reshape2)
+library(showtext)
+library(ggrepel)
+
+tuesdata <- tidytuesdayR::tt_load("2023-01-24")
+
+survivalists <- tuesdata$survivalists
+episodes <- tuesdata$episodes
+
+```
+
+
+```{r episode views}
+
+font_add_google(name = "Creepster", family = "Creepster")
+showtext_auto()
+
+plot1 <- episodes %>%
+  filter(season != 8) %>%
+  filter(season != 9) %>%
+  ggplot(aes(x = episode_number_overall, y = viewers, fill = factor(season))) + 
+  geom_bar(position = "dodge", stat = "identity", color = "black") +
+  geom_label(label = "Season 1 Finale:\n2.38 million views",
+             x = 17,
+             y = 2.15,
+             label.padding = unit(0.25, "lines"), # Rectangle size around label
+             label.size = 0.35,
+             color = "dark red",
+             fill = "white",
+             size = 2) +
+  scale_fill_brewer(palette="Dark2") +
+  scale_x_continuous(breaks = c(11, 24, 34, 44, 55, 66, 77), expand = c(0, 0)) +
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_fill_manual(values = c("dark red", 
+                               "#b7410e", 
+                               "gold", 
+                               "dark green", 
+                               "light blue", 
+                               "blue", 
+                               "tan"),
+                    name = "Season") +
+  labs(title = "Alone: Number of U.S. Viewers per Episode",
+       subtitle = "in millions") +
+  xlab("Overall Episode Number") +
+  theme(plot.background = element_rect(fill = "white", color = NA),
+        panel.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.x = element_line(size = .1, color = "white"),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.y = element_line(size = .1, color = "white"),
+        plot.title = element_text(face = "bold", hjust = 0.5, family = "Creepster", size = 20),
+        plot.subtitle = element_text(face = "italic", hjust = 0.5),
+        axis.title.y = element_blank())
+
+plot1
+
+```
+
+
+```{r s1 survivalists}
+
+library(png)
+library(patchwork)
+
+survivalists_s1 <- survivalists %>%
+  filter(season == 1)
+
+alan <- readPNG("alan_kay.png", native = TRUE)
+sam <- readPNG("sam_larson.png", native = TRUE)
+mitch <- readPNG("mitch_mitchell.png", native = TRUE)
+lucas <- readPNG("lucas_miller.png", native = TRUE)
+dustin <- readPNG("dustin_feher.png", native = TRUE)
+brant <- readPNG("brant_mcgee.png", native = TRUE)
+wayne <- readPNG("wayne_russell.png", native = TRUE)
+joe <- readPNG("joe_robinet.png", native = TRUE)
+chris <- readPNG("chris_weatherman.png", native = TRUE)
+josh <- readPNG("josh_chavez.png", native = TRUE)
+
+survivalists_s1$reason_tapped_out <- replace_na(survivalists_s1$reason_tapped_out, "Winner")
+survivalists_s1$reason_tapped_out <- str_replace(survivalists_s1$reason_tapped_out, "Realized he should actually be around for his mother's cancer", "Mother has cancer")
+
+survivalists_s1$name_reason <- paste0(survivalists_s1$name, "\n", "(", survivalists_s1$reason_tapped_out, ")")
+
+plot2 <- ggplot(survivalists_s1, aes(x = reorder(name_reason, days_lasted), y = days_lasted)) +
+  geom_bar(position = "dodge", stat = "identity", color = "black", fill = "white") +
+  coord_flip() +
+  scale_y_continuous(breaks = seq(0, 100, 10)) +
+  geom_text(aes(label = days_lasted), position = position_dodge(width = 0.75), vjust = 0.5, hjust = -0.3) +
+  labs(title = "Season 1 Survivalists",
+       subtitle = "by number of days lasted & reason left",
+       caption = "Source: Alone R package: Datasets from the survival TV series | github: julia-tache | Jan 24th, 2023") +
+    theme(plot.background = element_rect(fill = "white", color = NA),
+        panel.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.x = element_line(size = .1, color = "white"),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.y = element_line(size = .1, color = "white"),
+        plot.title = element_text(face = "bold", hjust = 0.5, family = "Creepster", size = 20),
+        plot.subtitle = element_text(face = "italic", hjust = 0.5),
+        plot.caption = element_text(size = 8, hjust = 0),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 7)) +
+  inset_element(p = alan,
+                left = 0.8,
+                bottom = 0.9,
+                right = 0.95,
+                top = 0.98) +
+  inset_element(p = sam,
+                left = 0.78,
+                bottom = 0.8,
+                right = 0.93,
+                top = 0.88) +
+  inset_element(p = mitch,
+                left = 0.79,
+                bottom = 0.7,
+                right = 0.94,
+                top = 0.78) +
+    inset_element(p = lucas,
+                left = 0.78,
+                bottom = 0.6,
+                right = 0.93,
+                top = 0.68) +
+    inset_element(p = dustin,
+                left = 0.78,
+                bottom = 0.5,
+                right = 0.93,
+                top = 0.58) +
+    inset_element(p = brant,
+                left = 0.78,
+                bottom = 0.4,
+                right = 0.93,
+                top = 0.48) +
+    inset_element(p = wayne,
+                left = 0.78,
+                bottom = 0.3,
+                right = 0.93,
+                top = 0.38) +
+    inset_element(p = joe,
+                left = 0.78,
+                bottom = 0.2,
+                right = 0.93,
+                top = 0.28) +
+    inset_element(p = chris,
+                left = 0.78,
+                bottom = 0.1,
+                right = 0.93,
+                top = 0.18) +
+    inset_element(p = josh,
+                left = 0.78,
+                bottom = 0,
+                right = 0.93,
+                top = 0.08)
+
+plot2
+
+```
+
+```{r combine plots}
+
+combined_plot <- ggarrange(plot1, plot2, ncol = 1, nrow = 2, heights = c(9, 9), widths = c(10, 10), align = "v")
+
+combined_plot
+
+ggexport(combined_plot, filename = "combined_plot.pdf")
+
+```
+
