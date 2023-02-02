@@ -1,0 +1,77 @@
+---
+title: "Tidy Tuesday - Week 35"
+author: "Julia Tache"
+date: "8/24/2021"
+header-includes:
+   - \usepackage{dcolumn}
+output:
+  html_document:
+    df_print: paged
+  pdf_document: default 
+always_allow_html: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+
+library(tidyverse)
+library(tidytuesdayR)
+library(png)
+
+tuesdata <- tidytuesdayR::tt_load('2023-01-31')
+cats_uk <- tuesdata$cats_uk
+cats_uk_reference <- tuesdata$cats_uk_reference
+
+mypng <- readPNG("PiB.png")
+
+```
+
+```{r line graph}
+
+cats_uk <- cats_uk %>%
+  mutate(time2 = as.numeric(format(timestamp, "%H%M%S"))) %>%
+  mutate(time_of_day = case_when(time2 >= 20000 & time2 <= 55959 ~ "Early Morning",
+         time2 >= 60000 & time2 <= 115959 ~ "Morning",
+         time2 >= 120000 & time2 <= 195959 ~ "Afternoon",
+         time2 <= 15959 | time2 >= 200000 ~ "Night" )) %>%
+  filter(visible == TRUE)
+
+cats_uk$tag_id <- str_replace(cats_uk$tag_id, "-Tag", "")
+
+cats_uk_box <- cats_uk %>%
+  group_by(tag_id, time_of_day) %>%
+  tally() %>%
+  filter(n <= 56) # 75th percentile
+
+ggplot(cats_uk_box, aes(x = time_of_day, y = n, fill = time_of_day)) + 
+  geom_boxplot(alpha = 0.2) +
+  scale_x_discrete(limits = c("Night", "Afternoon", "Morning", "Early Morning")) +
+  coord_flip() +
+  scale_y_continuous(breaks = seq(0, 60, 10)) +
+  theme(plot.title = element_text(face = "bold"),
+        plot.subtitle = element_text(face = "italic"),
+        axis.title.y = element_blank(),
+        plot.background = element_rect(fill = "#E5FFFD"),
+        panel.grid.major = element_line(size = 1, linetype = "solid",
+                                colour = "white"), 
+        panel.grid.minor = element_line(size = 0.5, linetype = "dashed",
+                                colour = "white")) + 
+  ggtitle("Night Cats on the Move") +
+    labs(caption = "Source: Movebank for Animal Tracking Data | github: julia-tache | February 1st, 2023",
+       subtitle = "Between 2013 and 2017, Roland Kays et al. convinced hundreds of volunteers in the U.S., \nU.K., Australia, and New Zealand to strap GPS sensors on their pet cats. Most GPS pings \nout of a sample of almost 18,000 occured at night (between 8:00 PM and 2:00 AM).") +
+  ylab("Number of GPS-Tracked Movements") +
+  theme_minimal() +
+  theme(plot.title = element_text(face = "bold", size = 20),
+        plot.subtitle = element_text(face = "italic"),
+        plot.caption = element_text(size = 8, hjust = 0.5),
+        legend.position = "none",
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 7)) +
+  annotation_raster(mypng, ymin = 0, ymax= 10, xmin = 0.5, xmax = 2.5)
+
+ggsave("TT_Week5_2023.png")
+
+```
