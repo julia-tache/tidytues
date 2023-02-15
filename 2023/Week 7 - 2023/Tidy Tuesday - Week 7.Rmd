@@ -1,0 +1,97 @@
+---
+title: "Tidy Tuesday - Week 7"
+author: "Julia Tache"
+date: '2023-02-15'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+
+library(tidyverse)
+library(tidytuesdayR)
+library(reshape2)
+
+tuesdata <- tidytuesdayR::tt_load('2023-02-14')
+age_gaps <- tuesdata$age_gaps 
+
+head(age_gaps)
+
+```
+
+```{r prepare data}
+
+age_gaps$decades <- paste0(str_extract(age_gaps$release_year, "\\d{3}"), "0s")
+
+age_gaps$couple <- paste0(age_gaps$character_1_gender, " and ", age_gaps$character_2_gender)
+
+age_gaps$couple <- str_to_title(age_gaps$couple)
+
+age_gaps <- age_gaps %>%
+  mutate(gay_straight = case_when(couple == "Man And Woman" ~ "Straight Couple",
+                                  couple == "Woman And Man" ~ "Straight Couple",
+                                  couple == "Woman And Woman" ~ "Gay Couple",
+                                  couple == "Man And Man" ~ "Gay Couple"))
+
+```
+
+
+```{r plot}
+
+plot1 <- age_gaps %>%
+  group_by(decades, gay_straight) %>%
+  summarize(low = min(age_difference), high = max(age_difference), median = median(age_difference))
+
+plot1_long <- melt(plot1, id = c("decades", "gay_straight"))
+
+ann_text <- data.frame(decades = "1950s", 
+                       value = 45, 
+                       gay_straight = factor("Straight Couple", levels = c("Gay Couple", "Straight Couple")))
+
+ann_text2 <- data.frame(decades = "1990s", 
+                       value = 43, 
+                       gay_straight = factor("Gay Couple", levels = c("Gay Couple", "Straight Couple")))
+
+ggplot(plot1_long, aes(x = decades, y = value)) +
+  geom_line(color = "red") +
+  geom_point(size = 2, color = "red") +
+  coord_flip() +
+  facet_wrap(~gay_straight) +
+  geom_text(data = ann_text, 
+            label = "Highest Age Gap =\n52 Years,\nHarold and Maude\n(1971)", 
+            size = 3, 
+            face = "bold",
+            color = "dark red") +
+  geom_text(data = ann_text2, 
+            label = "Highest Age Gap =\n43 Years,\nBeginners (2010)", 
+            size = 3, 
+            face = "bold",
+            color = "dark red") +
+  labs(title = "\nAge Gaps in Movies",
+       subtitle = "\nDots correspond to minimum, median, and maximum age gaps\n in years between two characters in film for each decade.\n",
+       caption = "Source: Data is Plural | github: julia-tache | February 15th, 2023") +
+  theme(plot.background = element_rect(fill = "#ffcccb", color = NA),
+        panel.background = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        panel.grid.major.x = element_line(size = .1, color = "white"),
+        panel.grid.minor.y = element_blank(),
+        panel.grid.major.y = element_line(size = .1, color = "white"),
+        plot.title = element_text(size = 20, face = "bold", color = "white", hjust = 0.5),
+        plot.subtitle = element_text(size = 12, color = "dark red", hjust = 0.5),
+        plot.caption = element_text(size = 8, face = "bold", color = "dark red", hjust = 0.5),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_text(size = 10, face = "bold", color = "white"),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size = 10, face = "bold", color = "white"),
+        axis.ticks.y = element_blank(),
+        strip.background = element_rect(fill = "#ffcccb"),
+        strip.text = element_text(size = 12, face = "bold", color = "white"))
+
+ggsave("week7_2023.png")
+
+```
+
