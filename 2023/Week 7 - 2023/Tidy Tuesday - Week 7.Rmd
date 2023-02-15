@@ -47,11 +47,11 @@ plot1 <- age_gaps %>%
 
 plot1_long <- melt(plot1, id = c("decades", "gay_straight"))
 
-ann_text <- data.frame(decades = "1950s", 
+ann_text <- data.frame(decades = 3, 
                        value = 45, 
                        gay_straight = factor("Straight Couple", levels = c("Gay Couple", "Straight Couple")))
 
-ann_text2 <- data.frame(decades = "1990s", 
+ann_text2 <- data.frame(decades = 7.5, 
                        value = 43, 
                        gay_straight = factor("Gay Couple", levels = c("Gay Couple", "Straight Couple")))
 
