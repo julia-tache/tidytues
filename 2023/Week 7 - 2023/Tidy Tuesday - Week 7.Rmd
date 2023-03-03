@@ -94,4 +94,41 @@ ggplot(plot1_long, aes(x = decades, y = value)) +
 ggsave("week7_2023.png")
 
 ```
+```{r}
+
+men1_60s <- age_gaps %>%
+  filter(character_1_gender == "man") %>%
+  filter(decades == "1960s") %>%
+  summarize(m = median(actor_1_age))
+
+men2_60s <- age_gaps %>%
+  filter(character_2_gender == "man") %>%
+  filter(decades == "1960s") %>%
+  summarize(m = median(actor_2_age))
+
+(men1_60s$m + men2_60s$m) / 2
+
+men1_70s <- age_gaps %>%
+  filter(character_1_gender == "man") %>%
+  filter(decades == "1970s") %>%
+  summarize(m = median(actor_1_age))
+
+men2_70s <- age_gaps %>%
+  filter(character_2_gender == "man") %>%
+  filter(decades == "1970s") %>%
+  summarize(m = median(actor_2_age))
+
+(men1_70s$m + men2_70s$m) / 2
+
+age_gaps$half_age_plus_seven <- (age_gaps$actor_1_age / 2) + 7
+
+age_gaps$diff <- age_gaps$half_age_plus_seven - age_gaps$actor_2_age
+
+age_gaps$diff_cat <- ifelse(age_gaps$diff > 0, "Breaks Rule", "Makes Rule")
+
+table(age_gaps$diff_cat)
+
+filter(age_gaps, movie_name == "Beginners")
+
+```
 

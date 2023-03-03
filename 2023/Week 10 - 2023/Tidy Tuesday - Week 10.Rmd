@@ -1,0 +1,140 @@
+---
+title: "Tidy Tuesday - Week 10"
+author: "Julia Tache"
+date: '2023-03-03'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+
+library(tidyverse)
+library(tidytuesdayR)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(reshape2)
+library(gggibbous)
+library(extrafont)
+library(ggpubr)
+
+tuesdata <- tidytuesdayR::tt_load('2023-03-07')
+numbats <- tuesdata$numbats
+
+```
+
+```{r map}
+
+numbats_mapping <- numbats %>%
+  drop_na(month) %>%
+  mutate(season = case_when(month == "Jan" ~ "Summer",
+                            month == "Feb" ~ "Summer",
+                            month == "Mar" ~ "Fall",
+                            month == "Apr" ~ "Fall",
+                            month == "May" ~ "Fall",
+                            month == "Jun" ~ "Winter",
+                            month == "Jul" ~ "Winter",
+                            month == "Aug" ~ "Winter",
+                            month == "Sep" ~ "Spring",
+                            month == "Oct" ~ "Spring",
+                            month == "Nov" ~ "Spring",
+                            month == "Dec" ~ "Summer")) %>%
+  rename("Longitude" = "decimalLongitude") %>%
+  rename("Latitude" = "decimalLatitude") %>%
+  drop_na(Longitude) %>%
+  drop_na(Latitude)
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+map_1 <- ggplot(data = world) +
+  geom_sf(fill = "white") +
+  geom_point(data = numbats_mapping, aes(x = Longitude, y = Latitude, color = season), 
+             size = 1.5, position = "jitter") +
+  coord_sf(xlim = c(110, 155), ylim = c(-40, -11), expand = FALSE) +
+  facet_wrap(~factor(season, levels = c("Winter", "Spring", "Summer", "Fall"))) +
+  scale_color_manual(values = c("#ADD8E6", "#654321", "#8b0000", "#013220")) +
+  labs(title = "When and Where can you\nfind Numbats?",
+       subtitle = "\nMost Australian Numbats, an\nendangered species, were spotted\nduring the Spring and Summer months.\nTheir geographic distribution also\nincreases in the Springtime.\n",
+       caption = "Source: Atlas of Living Australia | github: julia-tache | March 3rd, 2023") +
+  theme(plot.background = element_rect(fill = "#FDD9B5", color = NA),
+        panel.background = element_rect(fill = "#FDD9B5"),
+        panel.grid = element_blank(),
+        plot.title = element_text(size = 14, face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(size = 9, face = "italic"),
+        plot.caption = element_text(size = 6),
+        text = element_text(family = "mono"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none",
+        legend.title = element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_text(size = 12, face = "bold"),
+        rect = element_rect(fill = "transparent"),
+        panel.border = element_blank())
+
+```
+
+```{r moon plot}
+
+moon <- numbats_mapping %>%
+  group_by(season) %>%
+  tally()
+
+moon$total <- sum(moon$n)
+moon$ratio <- moon$n / moon$total
+moon$x <- c(1, 1, 1, 1)
+
+moon_2 <- moon
+moon_2$ratio <- 1 - moon$ratio 
+
+moon <- rbind(moon, moon_2)
+
+moon$right <- rep(c(FALSE, TRUE), each = 4)
+
+options(repr.plot.width = 2, repr.plot.height = 3)
+
+moon_plot <- ggplot(moon, aes(x = x, y = factor(season, levels = c("Fall", "Summer", "Spring", "Winter")), 
+                       ratio = ratio, right = right, fill = right, label = season)) +
+  geom_moon() +
+  coord_cartesian(xlim = c(0.999, 1.001)) +
+  geom_text(vjust = 3, family = "mono") +
+  geom_label(aes(x = 1, y = 3.45, label = "% of Total\nSpottings", family = "mono"), size = 3, fill = "#ADD8E6") +
+  theme(plot.background = element_rect(fill = "#FDD9B5", color = NA),
+        panel.background = element_rect(fill = "#FDD9B5"),
+        panel.grid = element_blank(),
+        text = element_text(family = "mono"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "none",
+        rect = element_rect(fill = "transparent"),
+        panel.border = element_blank()) +
+  scale_fill_manual(values = c("#ADD8E6", "#654321"))
+
+```
+
+```{r combine plots}
+
+g <- ggarrange(map_1, moon_plot,
+          widths = c(3, 0.5),
+          nrow = 1)
+
+g2 <- cowplot::ggdraw(g) + 
+  theme(plot.background = element_rect(fill = "#FDD9B5", color = NA))
+
+final_plot <- plot(g2)
+
+ggsave("arrangedplot.png", final_plot, width = 8, height = 6)
+
+```
+
