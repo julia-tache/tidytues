@@ -1,0 +1,134 @@
+---
+title: "Tidy Tuesday - Week 11"
+author: "Julia Tache"
+date: '2023-03-16'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load data}
+
+library(tidyverse)
+library(tidytuesdayR)
+library(stringr)
+library(extrafont)
+library(tidytext)
+library(ggpubr)
+
+tuesdata <- tidytuesdayR::tt_load('2023-03-14')
+
+drugs <- tuesdata$drugs
+
+```
+
+
+```{r clean and prep data}
+
+# just human drugs
+drugs <- drugs %>%
+  filter(category == "human")
+
+drugs$marketing_authorisation_holder_company_name <- word(drugs$marketing_authorisation_holder_company_name, 1, sep=" ")
+drugs$marketing_authorisation_holder_company_name <- str_remove(drugs$marketing_authorisation_holder_company_name, ",")
+drugs$marketing_authorisation_holder_company_name <- str_to_upper(drugs$marketing_authorisation_holder_company_name)
+
+drugs$marketing_authorisation_holder_company_name <- str_replace(drugs$marketing_authorisation_holder_company_name, "GLAXOSMITHKLINE", "GSK")
+drugs$marketing_authorisation_holder_company_name <- str_replace(drugs$marketing_authorisation_holder_company_name, "ELI", "ELI LILLY")
+
+drugs <- drugs %>%
+  filter(marketing_authorisation_holder_company_name == "NOVARTIS" | marketing_authorisation_holder_company_name == "PFIZER" | marketing_authorisation_holder_company_name == "TEVA" | marketing_authorisation_holder_company_name == "MERCK" | marketing_authorisation_holder_company_name == "ACCORD" | marketing_authorisation_holder_company_name == "MYLAN" | marketing_authorisation_holder_company_name == "GSK" | marketing_authorisation_holder_company_name == "JANSSEN-CILAG" | marketing_authorisation_holder_company_name == "ROCHE" | marketing_authorisation_holder_company_name == "TAKEDA" | marketing_authorisation_holder_company_name == "ASTRAZENECA" | marketing_authorisation_holder_company_name == "ELI")
+
+drugs_pie_chart <- drugs %>%
+  filter(authorisation_status == "authorised") %>%
+  group_by(generic) %>%
+  tally()
+
+drugs_pie_chart$generic <- str_replace(drugs_pie_chart$generic, "TRUE", "GENERIC")
+drugs_pie_chart$generic <- str_replace(drugs_pie_chart$generic, "FALSE", "REFERENCE")
+
+drugs_bar_chart <- drugs %>%
+  group_by(authorisation_status, marketing_authorisation_holder_company_name) %>%
+  tally() %>%
+  rename("Company" = "marketing_authorisation_holder_company_name") %>%
+  arrange(n)
+
+drugs_bar_chart$authorisation_status <- str_replace(drugs_bar_chart$authorisation_status, "authorised", "Authorized")
+drugs_bar_chart$authorisation_status <- str_replace(drugs_bar_chart$authorisation_status, "w", "W")
+drugs_bar_chart$authorisation_status <- str_replace(drugs_bar_chart$authorisation_status, "refused", "Refused")
+
+```
+
+```{r pie chart}
+
+# help from https://r-graph-gallery.com/128-ring-or-donut-plot.html
+
+drugs_pie_chart$fraction <- drugs_pie_chart$n / sum(drugs_pie_chart$n)
+
+drugs_pie_chart$percent <- round(drugs_pie_chart$fraction * 100, digits = 2)
+
+# cumulative percentages (top of each rectangle)
+drugs_pie_chart$ymax <- cumsum(drugs_pie_chart$fraction)
+
+# bottom of each rectangle
+drugs_pie_chart$ymin <- c(0, head(drugs_pie_chart$ymax, n=-1))
+
+# label position
+drugs_pie_chart$labelPosition <- (drugs_pie_chart$ymax + drugs_pie_chart$ymin) / 2
+
+# Compute a good label
+drugs_pie_chart$label_1 <- paste0(drugs_pie_chart$generic, "\n Percent: ", drugs_pie_chart$percent, "%")
+
+# Make the plot
+pie_chart <- ggplot(drugs_pie_chart, aes(ymax = ymax, ymin = ymin, xmax = 4, xmin = 3, fill = generic)) +
+  geom_rect() +
+  geom_label(x = 3.5, aes(y = labelPosition, label = label_1), size = 4, family = "Georgia") +
+  labs(title = "Percentage of Generic vs. Reference Drugs",
+       subtitle = '\nThe majority of drugs developed by the Top 12 companies in the dataset\nare "reference drugs" as opposed to generic, meaning they are\npatent-protected. Generic drugs are developed based on these authorized\nmedications and treatments using the same active ingredients.\n') +
+  scale_fill_brewer(palette = 4) +
+  coord_polar(theta = "y") +
+  xlim(c(2, 4)) +
+  theme_void() +
+  theme(panel.background = element_rect(fill = "black"),
+        text = element_text(family = "Georgia"),
+        plot.title = element_text(size = 9, face = "bold", hjust = 0.5),
+        plot.subtitle = element_text(size = 8, hjust = 0.5),
+        legend.position = "none")
+
+```
+
+```{r bar graph}
+
+bar_chart <- ggplot(drugs_bar_chart, aes(reorder(Company, n, FUN = sum), n, fill = authorisation_status)) +
+  geom_bar(stat = "identity") +
+  labs(subtitle = "\nThe number of drugs developed by 12 major\ncompanies by authorization status from 1995-2022\n",
+       caption = "Source: European Medicines Agency | github: julia-tache | March 16th, 2023") +
+  scale_fill_brewer(palette = 4) +
+  theme(panel.background = element_rect(fill = "black"),
+        text = element_text(family = "Georgia"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.major.y = element_line(size = .1, color = "white"),
+        plot.title = element_blank(),
+        plot.subtitle = element_text(size = 9, face = "bold", hjust = 0.5),
+        plot.caption = element_text(size = 7, hjust = 0.5),
+        axis.title.x = element_blank(),
+        axis.text.x = element_text(size = 8, angle = 90, vjust = 0.5, hjust = 1),
+        axis.title.y = element_blank(),
+        legend.title = element_blank(),
+        legend.position = "bottom")
+
+```
+
+```{r combine plots}
+
+plot <- ggarrange(pie_chart, bar_chart,
+          ncol = 2, nrow = 1)
+
+annotate_figure(plot, top = text_grob("European Drug Development\n", size = 16, face = "bold", family = "Georgia"))
+
+ggsave("week11.png")
+
+```
+
