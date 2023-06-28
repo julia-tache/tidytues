@@ -1,0 +1,163 @@
+---
+title: "Tidy Tuesday - Week 26 (2023)"
+author: "Julia Tache"
+date: '2023-06-28'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+```
+
+```{r load packages}
+
+library(tidyverse)
+library(tidytuesdayR)
+library(sf)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(reshape2)
+library(gggibbous)
+library(extrafont)
+library(ggpubr)
+library(usmap)
+library(raster)
+library(ggspatial)
+library(png)
+library(patchwork)
+library(cowplot)
+
+```
+
+
+```{r load data}
+
+tuesdata <- tidytuesdayR::tt_load("2023-06-27")
+
+us_place_names <- tuesdata$us_place_names
+us_place_history <- tuesdata$us_place_history
+
+ind <- left_join(us_place_names, us_place_history) %>%
+  filter(state_name == "Missouri") %>%
+  filter(feature_name == "Independence")
+
+bay <- left_join(us_place_names, us_place_history) %>%
+  filter(state_name == "Nebraska") %>%
+  filter(feature_name == "Bayard")
+
+fl <- left_join(us_place_names, us_place_history) %>%
+  filter(state_name == "Wyoming") %>%
+  filter(feature_name == "Fort Laramie")
+
+glen <- left_join(us_place_names, us_place_history) %>%
+  filter(state_name == "Idaho") %>%
+  filter(feature_name == "Glenns Ferry")
+
+bak <- left_join(us_place_names, us_place_history) %>%
+  filter(state_name == "Oregon") %>%
+  filter(feature_name == "Baker City")
+
+mapping_df <- rbind(ind, bay, fl, glen, bak) %>%
+  rename("Longitude" = "prim_long_dec") %>%
+  rename("Latitude" = "prim_lat_dec")
+
+rownames(mapping_df) <- mapping_df$feature_name
+
+```
+
+```{r}
+
+state <- map_data("state")
+
+img <- readPNG("dysentery.png", native = TRUE)
+
+ggplot() + 
+  annotation_map_tile("stamenwatercolor") +
+  geom_polygon(data = state, aes(x = long, y = lat, group = group), color = "white", fill = "#E5D3B3", alpha = 0.5) + 
+  geom_point(data = mapping_df, aes(x = Longitude, y = Latitude), 
+             size = 2) +
+  geom_text(data = mapping_df, aes(x = Longitude, y = Latitude),
+            label = rownames(mapping_df), 
+            nudge_x = -0.5, nudge_y = -0.5,
+            size = 4,
+            angle = 30,
+            check_overlap = T,
+            hjust = 1,
+            family = "Courier") +
+    geom_label(data = mapping_df, 
+             label = "Named in 1887 by\nMillard and Jap Senteny\nfor their original home in\nBayard, Iowa.\n", 
+             x = -98,
+             y = 41.75,
+             label.size = 0.35,
+             color = "black",
+             fill = "#00FF00",
+             vjust = -0.1,
+             size = 2,
+             family = "Courier") +
+  geom_label(data = mapping_df, 
+             label = "Citizens approved City\nResolution on 11-7-89\nin favor of the name\nBaker City.\n", 
+             x = -113,
+             y = 45,
+             label.size = 0.35,
+             color = "black",
+             fill = "#00FF00",
+             vjust = -0.1,
+             size = 2,
+             family = "Courier") +
+   geom_label(data = mapping_df, 
+             label = "THE OREGON TRAIL", 
+             x = -115,
+             y = 27,
+             label.size = 0.35,
+             color = "black",
+             fill = "#00FF00",
+             size = 7,
+             family = "Courier",
+             label.r = unit(0, "pt")) +
+  geom_line(data = mapping_df, aes(x = Longitude, y = Latitude)) +
+  coord_sf(xlim = c(-127, -70), ylim = c(22, 51), expand = FALSE) +
+  labs(caption = "Source: National Map Staged Products Directory | github: julia-tache | June 27th, 2023") +
+  theme_void() +
+    theme(panel.background = element_rect(fill = "#00FF00"),
+        text = element_text(family = "Courier"),
+        plot.caption = element_text(size = 8, hjust = 0.5),
+        legend.position = "none") +
+  draw_image(img, x = -82, y = 20.6, width = 12, height = 10)
+
+ggsave("week27.png", final_plot, width = 8, height = 6)
+
+```
+
+
+```{r load data}
+# Prepare binning
+spdf_fortified$bin <- cut( spdf_fortified$y_2015 , breaks=c(seq(5,10), Inf), labels=c("5-6", "6-7", "7-8", "8-9", "9-10", "10+" ), include.lowest = TRUE )
+ 
+# Prepare a color scale coming from the viridis color palette
+library(viridis)
+my_palette <- rev(magma(8))[c(-1,-8)]
+ 
+# plot
+ggplot() +
+  geom_polygon(data = spdf_fortified, aes(fill = bin, x = long, y = lat, group = group) , size=0, alpha=0.9) +
+  geom_text(data=centers, aes(x=x, y=y, label=id), color="white", size=3, alpha=0.6) +
+  theme_void() +
+  scale_fill_manual( 
+    values=my_palette, 
+    name="Wedding per 1000 people in 2015", 
+    guide = guide_legend( keyheight = unit(3, units = "mm"), keywidth=unit(12, units = "mm"), label.position = "bottom", title.position = 'top', nrow=1) 
+  ) +
+  ggtitle( "A map of marriage rates, state by state" ) +
+  theme(
+    legend.position = c(0.5, 0.9),
+    text = element_text(color = "#22211d"),
+    plot.background = element_rect(fill = "#f5f5f2", color = NA), 
+    panel.background = element_rect(fill = "#f5f5f2", color = NA), 
+    legend.background = element_rect(fill = "#f5f5f2", color = NA),
+    plot.title = element_text(size= 22, hjust=0.5, color = "#4e4d47", margin = margin(b = -0.1, t = 0.4, l = 2, unit = "cm")),
+  )
+
+```
+
