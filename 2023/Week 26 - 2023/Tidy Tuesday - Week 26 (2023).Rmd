@@ -67,7 +67,7 @@ rownames(mapping_df) <- mapping_df$feature_name
 
 ```
 
-```{r}
+```{r Oregon Trail}
 
 state <- map_data("state")
 
@@ -126,38 +126,7 @@ ggplot() +
         legend.position = "none") +
   draw_image(img, x = -82, y = 20.6, width = 12, height = 10)
 
-ggsave("week27.png", final_plot, width = 8, height = 6)
-
-```
-
-
-```{r load data}
-# Prepare binning
-spdf_fortified$bin <- cut( spdf_fortified$y_2015 , breaks=c(seq(5,10), Inf), labels=c("5-6", "6-7", "7-8", "8-9", "9-10", "10+" ), include.lowest = TRUE )
- 
-# Prepare a color scale coming from the viridis color palette
-library(viridis)
-my_palette <- rev(magma(8))[c(-1,-8)]
- 
-# plot
-ggplot() +
-  geom_polygon(data = spdf_fortified, aes(fill = bin, x = long, y = lat, group = group) , size=0, alpha=0.9) +
-  geom_text(data=centers, aes(x=x, y=y, label=id), color="white", size=3, alpha=0.6) +
-  theme_void() +
-  scale_fill_manual( 
-    values=my_palette, 
-    name="Wedding per 1000 people in 2015", 
-    guide = guide_legend( keyheight = unit(3, units = "mm"), keywidth=unit(12, units = "mm"), label.position = "bottom", title.position = 'top', nrow=1) 
-  ) +
-  ggtitle( "A map of marriage rates, state by state" ) +
-  theme(
-    legend.position = c(0.5, 0.9),
-    text = element_text(color = "#22211d"),
-    plot.background = element_rect(fill = "#f5f5f2", color = NA), 
-    panel.background = element_rect(fill = "#f5f5f2", color = NA), 
-    legend.background = element_rect(fill = "#f5f5f2", color = NA),
-    plot.title = element_text(size= 22, hjust=0.5, color = "#4e4d47", margin = margin(b = -0.1, t = 0.4, l = 2, unit = "cm")),
-  )
+ggsave("week27.png", width = 8, height = 6)
 
 ```
 

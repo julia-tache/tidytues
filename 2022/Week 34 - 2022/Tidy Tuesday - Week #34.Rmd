@@ -46,15 +46,16 @@ plot1 <- ggplot(chips, aes(x = Year, y = `Transistors (million)`)) +
   ylab("Transistors, in millions") +
   ylim(0, 30000) +
   labs(title = "Exponential Growth in GPU Transistors",
-       subtitle = "Moore's Law states that the number of transistors in a dense \nintegrated circuit (IC) doubles about every two years. This is especially \ntrue for GPUs, which are lower Frequency than CPUs but catching up.",
+       subtitle = "Moore's Law states that the number of transistors in a dense \nintegrated circuit (IC) doubles about every two years. This is especially \ntrue for GPUs, which are lower in Frequency than CPUs but catching up.",
        caption = "Source: CHIP Dataset | github: julia-tache | July 26th, 2022") +
   geom_smooth(color = "white", se = FALSE) +
   theme(legend.key = element_rect(fill = "#F0F8FF"),
         legend.background = element_rect(fill="#F0F8FF"),
-        legend.title = element_text(color = "black", face = "bold"),
-        legend.text = element_text(color = "black"),
+        legend.title = element_text(color = "black", face = "bold", size = 9),
+        legend.text = element_text(color = "black", size = 8),
         panel.background = element_rect(fill = "#add8e6"),
         legend.position = "bottom",
+        legend.justification = "left",
         plot.background = element_rect(fill = "#F0F8FF"),
         strip.background = element_rect(fill = "#92b1b6"),
         strip.text = element_text(colour = 'black', size = 14, face = "bold"),
@@ -70,7 +71,7 @@ plot1 <- ggplot(chips, aes(x = Year, y = `Transistors (million)`)) +
 
 plot1
 
-ggsave("plot1.png")
+ggsave("plot1.png", height = 5, width = 8)
 
 ```
 
