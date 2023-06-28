@@ -28,6 +28,7 @@ library(lubridate)
 
 chips <- filter(chips, `Release Date` != "NaT")
 chips <- filter(chips, Vendor != "Other")
+chips <- filter(chips, Foundry != "Unknown")
 chips <- filter(chips, `Transistors (million)` > 15) # remove low outliers
 chips$Year <- str_extract(chips$`Release Date`, "\\d{4}")
 chips$Year <- year(as.Date(chips$Year, format = "%Y"))
@@ -40,19 +41,19 @@ chips <- drop_na(chips, `Year`)
 ```{r regular scatter plot}
 
 plot1 <- ggplot(chips, aes(x = Year, y = `Transistors (million)`)) + 
-  geom_point(aes(size = `Freq (MHz)`, color = Vendor), alpha = 0.5) +
+  geom_point(aes(size = `Freq (MHz)`, color = Foundry), alpha = 0.5) +
   facet_grid(~Type) +
   xlab("Year of Release") +
   ylab("Transistors, in millions") +
   ylim(0, 30000) +
-  labs(title = "Exponential Growth in GPU Transistors",
+  labs(title = "Exponential Growth in GPU Transistors by Foundry",
        subtitle = "Moore's Law states that the number of transistors in a dense \nintegrated circuit (IC) doubles about every two years. This is especially \ntrue for GPUs, which are lower in Frequency than CPUs but catching up.",
        caption = "Source: CHIP Dataset | github: julia-tache | July 26th, 2022") +
   geom_smooth(color = "white", se = FALSE) +
   theme(legend.key = element_rect(fill = "#F0F8FF"),
         legend.background = element_rect(fill="#F0F8FF"),
-        legend.title = element_text(color = "black", face = "bold", size = 9),
-        legend.text = element_text(color = "black", size = 8),
+        legend.title = element_text(color = "black", face = "bold", size = 8),
+        legend.text = element_text(color = "black", size = 7),
         panel.background = element_rect(fill = "#add8e6"),
         legend.position = "bottom",
         legend.justification = "left",
