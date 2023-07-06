@@ -1,0 +1,109 @@
+---
+title: 'Tidy Tuesday - Week #27'
+author: "Julia Tache"
+date: '2023-07-06'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load packages}
+
+library(tidyverse)
+library(tidytuesdayR)
+library(geojsonio)
+library(broom)
+library(mapproj)
+library(wesanderson)
+library(jpeg)
+library(png)
+library(patchwork)
+
+```
+
+Code guide: https://r-graph-gallery.com/327-chloropleth-map-from-geojson-with-ggplot2.html
+
+```{r load data}
+
+tuesdata <- tidytuesdayR::tt_load("2023-07-04")
+
+new_jersey <- tuesdata$historical_markers %>%
+  filter(state_or_prov == "New Jersey") %>%
+  filter(is.na(missing)) %>%
+  rename("County" = "county_or_parish") %>%
+  group_by(County) %>%
+  tally()
+
+```
+
+```{r .geojson of New Jersey counties}
+
+spdf <- geojson_read("County_Boundaries_of_NJ.geojson.geojson.geojson",  what = "sp")
+
+spdf_fortified <- tidy(spdf, region = "COUNTY")
+
+spdf_fortified$id <- paste0(str_to_sentence(spdf_fortified$id), " County")
+
+spdf_fortified <- spdf_fortified %>%
+  rename("County" = "id")
+
+```
+
+```{r join with marker data}
+
+spdf_fortified <- spdf_fortified %>%
+  left_join( ., new_jersey, by = c("County"))
+
+spdf_fortified$n[ is.na(spdf_fortified$n)] = 0.001
+
+```
+
+```{r final map}
+
+img <- readJPEG("Derick_Banta_House.jpeg", native = TRUE)
+
+ggplot() +
+  geom_polygon(data = spdf_fortified,
+               color = "white",
+               size = 0.3,
+               aes(fill = n, x = long, y = lat, group = group), size = 0, alpha = 0.9) +
+  scale_fill_gradientn(colors = wes_palette("IsleofDogs2", 100, type = "continuous"),
+                       trans = "log",
+                       breaks = c(1, 2, 3, 20, 50, 100),
+                       name = "",
+                       guide = guide_legend(keyheight = unit(1, units = "mm"),
+                                            keywidth = unit(3, units = "mm"),
+                                            label.position = "bottom",
+                                            title.position = "top",
+                                            nrow = 1)) +
+  labs(title = "Number of NJ Historical Markers by County",
+       subtitle = "Light beige counties indicate no markers",
+       caption = "Source: Historical Marker Database USA Index | github: julia-tache | July 6th, 2023") +
+  theme(text = element_text(color = "#22211d"),
+        plot.background = element_rect(fill = "#f5f5f2", color = NA),
+        panel.background = element_rect(fill = "#f5f5f2", color = NA),
+        legend.background = element_rect(fill = "#f5f5f2", color = NA),
+        plot.title = element_text(size = 12, face = "bold", hjust = -0.01, color = "#4e4d47"),
+        plot.subtitle = element_text(size = 8, face = "italic", hjust = 1, color = "#4e4d47"),
+        plot.caption = element_text(size = 6, hjust = -0.25, vjust = -3, color = "#4e4d47", margin = margin(b = 0.3, unit = "cm")),
+        legend.position = "right",
+        legend.margin = unit(-1, "cm"),
+        axis.title = element_blank()) +
+  coord_map() +
+  geom_point(aes(x = -73.99338, y = 40.94168), colour = "red") + # coordinate of Derick Banta House
+  geom_segment(aes(x = -73.99338, y = 40.94168, xend = -73.5, yend = 41),
+               arrow = arrow(length = unit(0.5, "cm"))) +
+  inset_element(p = img,
+                left = 1,
+                bottom = 0.55,
+                top = 0.97,
+                right = 1.5)
+
+ggsave("week_27.png")
+
+```
+
+
+
