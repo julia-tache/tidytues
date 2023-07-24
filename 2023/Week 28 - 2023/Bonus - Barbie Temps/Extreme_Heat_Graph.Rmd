@@ -1,0 +1,87 @@
+---
+title: "Extreme Heat Graph"
+output: html_document
+date: "2023-07-24"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load packages}
+
+library(tidyverse)
+library(tidytuesdayR)
+library(devtools)
+library(tibble)
+library(reshape2)
+library(showtext)
+theme_name = "theme_barbie" # Pick which theme you want
+
+paste("https://raw.githubusercontent.com/MatthewBJane/theme_park/main/", theme_name ,".R")
+source_url("https://raw.githubusercontent.com/MatthewBJane/theme_park/main/theme_barbie.R")
+
+```
+
+```{r load data}
+
+showtext_auto()
+
+global_temps <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-07-11/global_temps.csv')
+
+global_temps <- global_temps %>%
+  filter(Year >= 1979) %>%
+  select(-`J-D`, -`D-N`, -`DJF`, -`MAM`, -`JJA`, -`SON`)
+
+global_temps_t <- as.data.frame(t(global_temps))
+names(global_temps_t) <- global_temps_t[1,]
+global_temps_t <- global_temps_t[-1,]
+
+global_temps_t <- tibble::rownames_to_column(global_temps_t, "Month")
+
+global_temps_graph <- as.data.frame(melt(global_temps_t, id.vars = c("Month"))) %>%
+  rename("Year" = "variable") %>%
+  rename("Temp Change" = "value")
+
+global_temps_graph <- global_temps_graph %>%
+  filter(Year != 1979 | Year != 2016 | Year != 2023)
+
+global_temps_graph_1979 <- global_temps_graph %>%
+  filter(Year == 1979)
+
+global_temps_graph_2016 <- global_temps_graph %>%
+  filter(Year == 2016)
+
+global_temps_graph_2023 <- global_temps_graph %>%
+  filter(Year == 2023)
+
+```
+
+```{r}
+
+ggplot() +
+  theme_barbie(barbie_font = TRUE) +
+  geom_line(data = global_temps_graph, aes(x = factor(Month, levels = unique(Month)), y = `Temp Change`, group = Year), color = "gray") + 
+  geom_line(data = global_temps_graph_1979, aes(x = factor(Month, levels = unique(Month)), y = `Temp Change`, group = Year), color = light_color_barbie) +
+  annotate("text", x = 2, y = -0.2, label = "1979" , color = light_color_barbie, size = 8) +
+  geom_line(data = global_temps_graph_2016, aes(x = factor(Month, levels = unique(Month)), y = `Temp Change`, group = Year), color = medium_color_barbie) +
+  annotate("text", x = 4, y = 1.3, label = "2016" , color = medium_color_barbie, size = 8) +
+  geom_line(data = global_temps_graph_2023, aes(x = factor(Month, levels = unique(Month)), y = `Temp Change`, group = Year), color = dark_color_barbie, size = 1.5) +
+  geom_point(aes(x = 5, y = 0.94), colour = dark_color_barbie, size = 2) +
+  annotate("text", x = 6, y = 1, label = "May, 2023" , fontface = "bold", color = dark_color_barbie, size = 8) +
+  annotate("text", x = 8, y = -0.4, label = "Rising temperatures mean deviations from normal temps are becoming more extreme." , fontface = "italic", color = dark_color_barbie, size = 6) +
+  ylim(-0.5, 1.5) +
+  ggtitle("Global Temperature Deviations (1979-2023)") +
+  labs(subtitle = "1955-1980 Temperature Means are standard for comparing differences in global surface temperatures year-to-year.",
+       caption = "Source: NASA GISS Surface Temperature Analysis | github: julia-tache") +
+  ylab("Change in Temperature (in °C)") +
+  theme(plot.subtitle = element_text(size = 14, color = medium_color_barbie),
+        plot.caption = element_text(size = 14, color = medium_color_barbie),
+        axis.title.x = element_blank())
+
+ggsave("barbie_temps.png")
+  
+options("device" = "RStudioGD")
+
+```
+
