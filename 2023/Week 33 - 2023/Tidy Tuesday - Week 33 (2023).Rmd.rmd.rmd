@@ -1,0 +1,71 @@
+---
+title: "Tidy Tuesday - Week 33"
+author: "Julia Tache"
+date: '2023-08-16'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load packages}
+
+library(tidyverse)
+library(tidytuesdayR)
+library(reshape2)
+library(gghighcontrast)
+
+```
+
+```{r load data}
+
+tuesdata <- tidytuesdayR::tt_load("2023-08-15")
+spam <- tuesdata$spam
+
+```
+
+
+```{r prepare data for graphing}
+
+spam_graph <- spam %>%
+  select(-crl.tot, -bang)
+
+spam_graph_long <- melt(spam_graph, id.vars = "yesno")
+
+spam_graph_long <- spam_graph_long %>%
+  filter(value <= 1) # get rid of extreme outliers
+
+spam_graph_long$yesno <- str_replace(spam_graph_long$yesno, "y", "Spam")
+spam_graph_long$yesno <- str_replace(spam_graph_long$yesno, "n", "Not Spam")
+spam_graph_long$variable <- str_replace(spam_graph_long$variable, "dollar", "Dollar Signs")
+spam_graph_long$variable <- str_replace(spam_graph_long$variable, "money", '"Money"')
+spam_graph_long$variable <- str_replace(spam_graph_long$variable, "make", '"Make"')
+spam_graph_long$variable <- str_replace(spam_graph_long$variable, "n000", '"000"')
+
+```
+
+```{r plot}
+
+spam_graph_long %>%
+  ggplot(aes(x = value, fill = yesno)) +
+  geom_density(alpha = 0.8) +
+  xlim(0, 0.25) +
+  ylim(0, 100) +
+  facet_wrap(~variable) +
+  scale_fill_manual(values = c("#39FF14", "white")) +
+  theme_high_contrast(foreground_color = "white",
+  background_color = "black",
+  base_family = "InputMono") +
+  ggtitle("\nYou Got Mail! ") +
+  labs(subtitle = 'Distribution of occurances of certain strings found in emails\n(a series of 0s, dollar signs,and the words "make" and "Money")\nclassified as Spam or Not Spam. Spam emails are more\nlikely to have the associated strings contained in their text.\n',
+       caption = "Source: Spam E-Mail Database | github: julia-tache | Aug 16th, 2023") +
+  theme(plot.title = element_text(size = 16, face = "bold.italic", hjust = 1),
+        plot.subtitle = element_text(size = 8, hjust = 1),
+        legend.position = "bottom",
+        legend.title = element_blank(),
+        axis.title.x = element_blank())
+
+ggsave("spam_emails.png")
+
+```
