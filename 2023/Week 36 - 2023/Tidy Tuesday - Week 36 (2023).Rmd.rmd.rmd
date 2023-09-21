@@ -3,7 +3,7 @@ title: "Tidy Tuesday - Week 33"
 author: "Julia Tache"
 date: '2023-09-20'
 output: html_document
----
+---ss
 
 ```{r setup, include=FALSE}
 
@@ -28,11 +28,11 @@ wages <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidy
 
 ```
 
-```{r prepare data for graphing}
+```{r prepare demographic data for graphing 1}
 
 demographics_graph <- demographics %>%
   filter(facet == "all wage and salary workers" | facet == "private sector: manufacturing" | facet == "public sector: federal" | facet == "public sector: police" | facet == "transportation, communication, and utilities" | facet == "construction" | facet == "manufacturing" | facet == "private sector: construction" | facet == "public sector: postal service" | facet == "demographics: less than college" | facet == "demographics: college or more") %>%
-  filter(year > 1983)
+  filter(year > 1982)
 
 demographics_graph$facet <- str_replace(demographics_graph$facet, "all wage and salary workers", "All Workers")
 
@@ -52,11 +52,131 @@ demographics_graph$facet <- str_replace(demographics_graph$facet, "Demographics:
 
 demographics_graph_final <- demographics_graph %>%
   group_by(year, facet) %>%
-  summarize(avg_perc = mean(p_members)) # averages combined categories
+  summarize(avg_p_mem = mean(p_members)) # averages combined categories
+
+```
+
+```{r facet graph, sector (demographics)}
+
+ggplot(demographics_graph_final, aes(x = year, y = avg_p_mem)) +
+  geom_bar(stat = "identity", width = 0.75, fill = "#DB1A1A") +
+  facet_wrap(~factor(facet, levels = c("All Workers", "Less than College", "College & Above", "Construction (All)", "Manufacturing (All)", "Public Sector: Federal", "Public Sector: Police", "Public Sector: Postal Service", "Transport, Comms, Utilities"))) +
+  ggtitle("Union Membership has Decreased in Nearly All Sectors in the Last 40 Years") +
+  labs(subtitle = "% of workers who are union members (1983-2022)",
+       caption = "Source: unionstats.com | github: julia-tache | Sep 20th, 2023") +
+  theme_linedraw() +
+  theme(plot.background = element_rect("#ECECEC"),
+        plot.title = element_text(face = "bold"),
+        plot.subtitle = element_text(face = "italic"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank()) +
+  scale_x_continuous(breaks = c(1983, 1990, 2000, 2010, 2020))
+
+ggsave("plot1.png")
+
+```
+
+```{r prepare demographic data for graphing 2}
+
+demographics_graph <- demographics %>%
+  filter(facet == "all wage and salary workers" | facet == "private sector: manufacturing" | facet == "public sector: federal" | facet == "public sector: police" | facet == "transportation, communication, and utilities" | facet == "construction" | facet == "manufacturing" | facet == "private sector: construction" | facet == "public sector: postal service" | facet == "demographics: less than college" | facet == "demographics: college or more") %>%
+  filter(year > 2017)
+
+demographics_graph$facet <- str_replace(demographics_graph$facet, "all wage and salary workers", "All Workers")
+
+demographics_graph$facet <- str_replace(demographics_graph$facet, "private sector: manufacturing", "Manufacturing (All)")
+demographics_graph$facet <- str_replace(demographics_graph$facet, "manufacturing", "Manufacturing (All)")
+
+demographics_graph$facet <- str_replace(demographics_graph$facet, "private sector: construction", "Construction (All)")
+demographics_graph$facet <- str_replace(demographics_graph$facet, "construction", "Construction (All)")
+
+demographics_graph$facet <- str_replace(demographics_graph$facet, "transportation, communication, and utilities", "Transport, Comms, Utilities")
+
+demographics_graph$facet <- str_replace(demographics_graph$facet, "demographics: college or more", "College & Above")
+
+demographics_graph$facet <- str_to_title(demographics_graph$facet)
+
+demographics_graph$facet <- str_replace(demographics_graph$facet, "Demographics: Less Than College", "Less than College")
+
+demographics_graph_final <- demographics_graph %>%
+  group_by(year, facet) %>%
+  summarize(avg_mem = mean(members),
+            avg_p_mem = mean(p_members)) # averages combined categories
+
+```
+
+```{r COVID impact?}
+
+demographics_graph_final$avg_mem <- round(demographics_graph_final$avg_mem, 2)
+demographics_graph_final$avg_p_mem <- round(demographics_graph_final$avg_p_mem, 3)
+
+demographics_graph_final %>%
+  filter(facet != "All Workers") %>%
+  filter(facet != "Less than College") %>%
+  filter(facet != "College & Above") %>%
+ggplot(aes(x = year, y = avg_mem)) +
+  geom_bar(stat = "identity", width = 0.75, fill = "#DB1A1A") +
+  facet_wrap(~factor(facet, levels = c("All Workers", "Less than College", "College & Above", "Construction (All)", "Manufacturing (All)", "Public Sector: Federal", "Public Sector: Police", "Public Sector: Postal Service", "Transport, Comms, Utilities"))) +
+  geom_label(aes(label = avg_mem), size = 2, nudge_y = 1) +
+  ggtitle("A COVID Uptick in Union Members?") +
+labs(subtitle = "# of union workers in thousands (2018-2022)",
+       caption = "Source: unionstats.com | github: julia-tache | Sep 20th, 2023") +
+  theme_linedraw() +
+  theme(plot.background = element_rect("#ECECEC"),
+        plot.title = element_text(face = "bold"),
+        plot.subtitle = element_text(face = "italic"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank()) +
+  scale_x_continuous(breaks = c(1983, 1990, 2000, 2010, 2020))
+
+ggsave("plot2.png")
+
+demographics_graph_final %>%
+  filter(facet == "All Workers" | facet == "Less than College" | facet == "College & Above") %>%
+ggplot(aes(x = year, y = avg_mem)) +
+  geom_bar(stat = "identity", width = 0.75, fill = "#DB1A1A") +
+  facet_wrap(~factor(facet, levels = c("All Workers", "Less than College", "College & Above", "Construction (All)", "Manufacturing (All)", "Public Sector: Federal", "Public Sector: Police", "Public Sector: Postal Service", "Transport, Comms, Utilities"))) +
+  geom_label(aes(label = avg_mem), size = 2, nudge_y = 1) +
+  ggtitle("A COVID Uptick in Union Members?") +
+  labs(subtitle = "# of union workers in thousands (2018-2022)",
+       caption = "Source: unionstats.com | github: julia-tache | Sep 20th, 2023") +
+  theme_linedraw() +
+  theme(plot.background = element_rect("#ECECEC"),
+        plot.title = element_text(face = "bold"),
+        plot.subtitle = element_text(face = "italic"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank()) +
+  scale_x_continuous(breaks = c(1983, 1990, 2000, 2010, 2020))
+
+ggsave("plot3.png", height = 5, width = 8)
+
+demographics_graph_final %>%
+ggplot(aes(x = year, y = avg_p_mem)) +
+  geom_bar(stat = "identity", width = 0.75, fill = "#DB1A1A") +
+  facet_wrap(~factor(facet, levels = c("All Workers", "Less than College", "College & Above", "Construction (All)", "Manufacturing (All)", "Public Sector: Federal", "Public Sector: Police", "Public Sector: Postal Service", "Transport, Comms, Utilities"))) +
+  geom_label(aes(label = paste0(avg_p_mem*100, "%")), size = 2) +
+  ggtitle("Union Membership has Mostly Remained Consistent over the Last 5 Years") +
+  labs(subtitle = "% of workers who are union members (2018-2022)",
+       caption = "Source: unionstats.com | github: julia-tache | Sep 20th, 2023") +
+  theme_linedraw() +
+  theme(plot.background = element_rect("#ECECEC"),
+        plot.title = element_text(face = "bold"),
+        plot.subtitle = element_text(face = "italic"),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank()) +
+  scale_x_continuous(breaks = c(1983, 1990, 2000, 2010, 2020))
+
+ggsave("plot4.png", height = 7, width = 9)
+
+```
+
+
+
+```{r prepare wage data for graphing}
 
 wages_graph <- wages %>%
   filter(facet == "all wage and salary workers" | facet == "private sector: manufacturing" | facet == "public sector: federal" | facet == "public sector: police" | facet == "transportation, communication, and utilities" | facet == "construction" | facet == "manufacturing" | facet == "private sector: construction" | facet == "public sector: postal service" | facet == "demographics: less than college" | facet == "demographics: college or more") %>%
-  filter(year > 1983)
+  filter(year > 1982)
 
 wages_graph$facet <- str_replace(wages_graph$facet, "all wage and salary workers", "All Workers")
 
@@ -81,27 +201,8 @@ wages_graph_final <- wages_graph_final %>%
 
 ```
 
-```{r facet graph, sector}
 
-ggplot(demographics_graph, aes(x = year, y = p_members)) +
-  geom_bar(stat = "identity", width = 0.75, fill = "#DB1A1A") +
-  facet_wrap(~factor(facet, levels = c("All Workers", "Less than College", "College & Above", "Construction (All)", "Manufacturing (All)", "Public Sector: Federal", "Public Sector: Police", "Public Sector: Postal Service", "Transport, Comms, Utilities"))) +
-  ggtitle("Union Membership has Decreased in Nearly All Sectors in the Last 40 Years") +
-  labs(subtitle = "% of workers who are union members (1983-2022)",
-       caption = "Source: unionstats.com | github: julia-tache | Sep 20th, 2023") +
-  theme_linedraw() +
-  theme(plot.background = element_rect("#ECECEC"),
-        plot.title = element_text(face = "bold"),
-        plot.subtitle = element_text(face = "italic"),
-        axis.title.x = element_blank(),
-        axis.title.y = element_blank()) +
-  scale_x_continuous(breaks = c(1983, 1990, 2000, 2010, 2020))
-
-ggsave("plot1.png", height = 6, width = 9)
-
-```
-
-```{r facet graph, sector}
+```{r facet graph, sector (wages)}
 
 wages_union <- ggplot(wages_graph_final, aes(x = year, y = value, group = `Difference in Wages    `, color = `Difference in Wages    `)) +
   geom_line() +
@@ -141,7 +242,7 @@ wage_premium <- wages_graph %>%
 
 plot2 <- ggarrange(wages_union, wage_premium, nrow = 2, ncol = 1) 
 
-ggsave("plot2.png", plot2, height = 8, width = 10)
+ggsave("plot5.png", plot2, height = 8, width = 10)
 
 ```
 
