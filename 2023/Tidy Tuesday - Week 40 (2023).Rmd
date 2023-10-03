@@ -1,0 +1,194 @@
+---
+title: "Tidy Tuesday - Week 40"
+output: html_document
+date: "2023-10-03"
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+```
+
+```{r load packages}
+
+library(tidyverse)
+library(tidytuesdayR)
+library(reshape2)
+library(jpeg)
+library(ggpubr)
+library(patchwork)
+
+```
+
+```{r load data}
+
+grants <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-10-03/grants.csv')
+grant_opportunity_details <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-10-03/grant_opportunity_details.csv')
+
+```
+
+```{r bar chart on grant recipients categories}
+
+eligibility_grants <- grant_opportunity_details %>%
+  select(eligibility_individuals,
+         eligibility_state_governments,
+         eligibility_county_governments,
+         eligibility_independent_school_districts,
+         eligibility_city_or_township_governments,
+         eligibility_special_district_governments,
+         eligibility_native_american_tribal_governments_federally_recognized,
+         eligibility_native_american_tribal_organizations_other,
+         eligibility_nonprofits_501c3,
+         eligibility_nonprofits_non_501c3,
+         eligibility_for_profit,
+         eligibility_small_businesses,
+         eligibility_private_institutions_of_higher_education,
+         eligibility_public_institutions_of_higher_education,
+         eligibility_public_indian_housing_authorities,
+         eligibility_others,
+         eligibility_unrestricted,
+         estimated_total_program_funding,
+         expected_number_of_awards)
+
+```
+
+
+```{r bar chart on grant recipients - prep funding $ data}
+
+Individuals_True <- eligibility_grants %>%
+  filter(eligibility_individuals == TRUE)
+
+Individuals <- sum(Individuals_True$estimated_total_program_funding, na.rm = TRUE)
+
+Small_Gov_True <- eligibility_grants %>%
+  filter(eligibility_state_governments == TRUE | eligibility_county_governments == TRUE | eligibility_city_or_township_governments == TRUE | eligibility_special_district_governments == TRUE)
+
+`State/Local Governments` <- sum(Small_Gov_True$estimated_total_program_funding, na.rm = TRUE)
+
+Schools_True <- eligibility_grants %>%
+  filter(eligibility_independent_school_districts == TRUE | eligibility_private_institutions_of_higher_education == TRUE | eligibility_public_institutions_of_higher_education == TRUE)
+
+`Schools and Colleges` <- sum(Schools_True$estimated_total_program_funding, na.rm = TRUE)
+
+NA_True <- eligibility_grants %>%
+  filter(eligibility_native_american_tribal_governments_federally_recognized == TRUE | eligibility_native_american_tribal_organizations_other == TRUE | eligibility_public_indian_housing_authorities == TRUE)
+
+`AIAN Gov't and Orgs.` <- sum(NA_True$estimated_total_program_funding, na.rm = TRUE)
+
+nonprofits <- eligibility_grants %>%
+  filter(eligibility_nonprofits_501c3 == TRUE | eligibility_nonprofits_non_501c3 == TRUE)
+
+Nonprofits <- sum(nonprofits$estimated_total_program_funding, na.rm = TRUE)
+
+forprofit <- eligibility_grants %>%
+  filter(eligibility_for_profit == TRUE | eligibility_small_businesses == TRUE)
+
+`For-Profit and Small Business` <- sum(forprofit$estimated_total_program_funding, na.rm = TRUE)
+
+unrestricted <- eligibility_grants %>%
+  filter(eligibility_unrestricted == TRUE)
+
+Unrestricted <- sum(unrestricted$estimated_total_program_funding, na.rm = TRUE)
+
+category <- c("Individuals", "State/Local Governments", "Schools and Colleges", "Tribal Gov't and Orgs.", "Nonprofits", "For-Profit and Small Business", "Unrestricted")
+funding_amounts <- c(Individuals, `State/Local Governments`, `Schools and Colleges`, `AIAN Gov't and Orgs.`, Nonprofits, `For-Profit and Small Business`, Unrestricted)
+
+funding$funding_rounded <- c(NA, "$29.0 billion", "$23.5 billion", "$22.8 billion", "$11.7 billion", "$3.5 billion", "$13.2 billion")
+
+```
+
+```{r bar chart on grant recipients - prep num of grants data}
+
+Individuals_True <- eligibility_grants %>%
+  filter(eligibility_individuals == TRUE)
+
+Individuals <- sum(Individuals_True$expected_number_of_awards, na.rm = TRUE)
+
+Small_Gov_True <- eligibility_grants %>%
+  filter(eligibility_state_governments == TRUE | eligibility_county_governments == TRUE | eligibility_city_or_township_governments == TRUE | eligibility_special_district_governments == TRUE)
+
+`State/Local Governments` <- sum(Small_Gov_True$expected_number_of_awards, na.rm = TRUE)
+
+Schools_True <- eligibility_grants %>%
+  filter(eligibility_independent_school_districts == TRUE | eligibility_private_institutions_of_higher_education == TRUE | eligibility_public_institutions_of_higher_education == TRUE)
+
+`Schools and Colleges` <- sum(Schools_True$expected_number_of_awards, na.rm = TRUE)
+
+NA_True <- eligibility_grants %>%
+  filter(eligibility_native_american_tribal_governments_federally_recognized == TRUE | eligibility_native_american_tribal_organizations_other == TRUE | eligibility_public_indian_housing_authorities == TRUE)
+
+`AIAN Gov't and Orgs.` <- sum(NA_True$expected_number_of_awards, na.rm = TRUE)
+
+nonprofits <- eligibility_grants %>%
+  filter(eligibility_nonprofits_501c3 == TRUE | eligibility_nonprofits_non_501c3 == TRUE)
+
+Nonprofits <- sum(nonprofits$expected_number_of_awards, na.rm = TRUE)
+
+forprofit <- eligibility_grants %>%
+  filter(eligibility_for_profit == TRUE | eligibility_small_businesses == TRUE)
+
+`For-Profit and Small Business` <- sum(forprofit$expected_number_of_awards, na.rm = TRUE)
+
+unrestricted <- eligibility_grants %>%
+  filter(eligibility_unrestricted == TRUE)
+
+Unrestricted <- sum(unrestricted$expected_number_of_awards, na.rm = TRUE)
+
+category <- c("Individuals", "State/Local Governments", "Schools and Colleges", "Tribal Gov't and Orgs.", "Nonprofits", "For-Profit and Small Business", "Unrestricted")
+grant_amounts <- c(Individuals, `State/Local Governments`, `Schools and Colleges`, `AIAN Gov't and Orgs.`, Nonprofits, `For-Profit and Small Business`, Unrestricted)
+
+num_of_grants <- data.frame(category, grant_amounts)
+
+num_of_grants$grants_rounded <- c("1.1k", "15.5k", "1.0 mil", "17.2k", "15.0k", "1.0 mil", "4.5k")
+
+```
+
+```{r bar graphs}
+
+plot1 <- ggplot(funding, aes(x = funding_amounts, y = reorder(category, funding_amounts), fill = category)) +
+  geom_col() +
+  geom_label(aes(label = funding_rounded), family = "Georgia", size = 3, hjust = 0.8, fontface = "bold", fill = "white") +
+  geom_label(aes(x = 1000000000, y = 1, label = "$654.5 million"), family = "Georgia", size = 3, hjust = -0.0001, fontface = "bold", fill = "white") +
+  scale_fill_manual(values = c("gray70", "red", "gray70", "gray70", "#00A36C", "gray70", "gray70"), guide = "none") +
+  ggtitle("\nWho's Eligible?") +
+  labs(subtitle = "\nFrom a sample of 2,000 federal grants, how much\nmoney is available to which entities?\n") +
+  theme_void() +
+  theme(plot.background = element_rect(fill = "white", color = "white"),
+        plot.title = element_text(size = 20, face = "bold", hjust = 0.5, family = "Georgia"),
+        plot.subtitle = element_text(hjust = 0.5, family = "Georgia"),
+        axis.text.y = element_text(size = 10, hjust = 1, family = "Georgia"),
+        plot.margin = margin(rep(15, 4)))
+
+img <- readJPEG("unnamed.jpg", native = TRUE)
+
+plot2 <- ggplot(num_of_grants, aes(x = grant_amounts, y = reorder(category, grant_amounts), fill = category)) +
+  geom_col() +
+  geom_label(aes(label = grants_rounded), family = "Georgia", size = 2.5, hjust = 0.6, fontface = "bold", fill = "white") +
+  scale_fill_manual(values = c("gray70", "red", "gray70", "gray70", "#00A36C", "gray70", "gray70"), guide = "none") +
+  labs(subtitle = "Number of funding opportunities\n(expected number of awards):\n",
+       caption = "Source: grants.gov | github: julia-tache | Oct 3rd, 2023") +
+  theme_void() +
+  theme(plot.background = element_rect(fill = "white", color = "white"),
+        plot.subtitle = element_text(hjust = 0.5, family = "Georgia"),
+        plot.caption = element_text(family = "Georgia"),
+        axis.text.y = element_text(size = 10, hjust = 1, family = "Georgia"),
+        plot.margin = margin(rep(15, 4))) +
+  inset_element(p = img,
+                left = 0.8,
+                bottom = 0.1,
+                right = 0.95,
+                top = 0.45)
+
+final_plot <- ggarrange(plot1, plot2, nrow = 2, ncol = 1) 
+
+ggsave("grants.png", final_plot, height = 8, width = 9)
+
+```
+
+
+
+```{r increased funding opportunities after IRA}
+
+```
+
