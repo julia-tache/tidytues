@@ -1,0 +1,158 @@
+---
+title: "Tidy Tuesday - Week 51 (2023)"
+output: html_document
+date: "2023-12-12"
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+```{r load packages}
+
+library(tidyverse)
+library(webr)
+library(reshape2)
+library(ggthemes)
+
+```
+
+
+```{r load data}
+
+holiday_episodes <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-12-19/holiday_episodes.csv')
+
+holiday_episode_genres <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2023/2023-12-19/holiday_episode_genres.csv')
+
+```
+```{r prepare data for piedonut}
+
+holiday_ep_year <- holiday_episodes %>%
+  select(year, christmas, holiday)
+
+holiday_ep_year$decade <- paste0(str_extract(holiday_ep_year$year, "\\d\\d\\d"), "0s")
+
+holiday_ep_decade <- holiday_ep_year %>%
+  select(-year) %>%
+  filter(decade != "1940s") %>%
+  filter(decade != "1950s") %>%
+  filter(decade != "1960s") %>%
+  filter(decade != "1970s") %>%
+  filter(decade != "NA0s")
+
+holiday_ep_summary <- holiday_ep_decade %>%
+  group_by(decade) %>%
+  summarize(christmas_n = sum(christmas, na.rm = TRUE),
+            holiday_n = sum(holiday, na.rm = TRUE))
+
+holiday_ep_long <- melt(holiday_ep_summary, id.vars = "decade")
+
+holiday_ep_long <- holiday_ep_long %>%
+  rename("Decade" = "decade") %>%
+  rename("Holiday" = "variable")
+
+holiday_ep_long$Holiday <- str_replace(holiday_ep_long$Holiday, "christmas_n", "X-Mas")
+holiday_ep_long$Holiday <- str_replace(holiday_ep_long$Holiday, "holiday_n", "Holiday")
+
+holiday_ep_long <- holiday_ep_long %>%
+  mutate(value1 = value/sum(value)*100)
+
+```
+
+```{r piedonut}
+
+PieDonut(holiday_ep_long, 
+         aes(Decade, Holiday, count = value1),
+         explode = 5, 
+         explodeDonut = TRUE,
+         ratioByGroup = TRUE,
+         addDonutLabel = FALSE,
+         labelposition = 0.5,
+         donutLabelSize = 3,
+         pieLabelSize = 4,
+         use.labels = FALSE,
+         r0 = 0.2,
+         start = pi/1,
+         showPieName = FALSE, 
+         showRatioThreshold = FALSE,
+         title = "Holidays: AS SEEN ON TV",
+         titlesize = 8)
+
+```
+
+```{r bargraph}
+
+holiday_episode_genres <- holiday_episode_genres %>%
+  filter(genres == "Action" | genres == "Adventure" | genres == "Animation" | genres == "Comedy" | genres == "Crime" | genres == "Drama" | genres == "Family" | genres == "Romance")
+
+holiday_ep_year <- holiday_episodes %>%
+  select(tconst, year, christmas, holiday)
+
+holiday_ep_year$decade <- paste0(str_extract(holiday_ep_year$year, "\\d\\d\\d"), "0s")
+  
+holiday_ep_year <- holiday_ep_year %>%
+  filter(decade != "1940s") %>%
+  filter(decade != "1950s") %>%
+  filter(decade != "1960s") %>%
+  filter(decade != "1970s") %>%
+  filter(decade != "NA0s") %>%
+  select(-year)
+
+joined_df <- left_join(holiday_ep_year, holiday_episode_genres)
+
+joined_df_summary <- joined_df %>%
+  drop_na(genres) %>%
+  select(-tconst) %>%
+  group_by(decade, genres) %>%
+  summarize(christmas_n = sum(christmas),
+            holiday_n = sum(holiday))
+
+joined_df_graph <- joined_df_summary %>%
+  group_by(decade) %>%
+  mutate(christmas_perc = christmas_n/sum(christmas_n),
+         holiday_perc = holiday_n/sum(holiday_n)) %>%
+  select(-christmas_n, -holiday_n)
+
+joined_df_graph_long <- melt(joined_df_graph, id.vars = c("decade", "genres"))
+
+joined_df_graph_long$variable <- str_replace(joined_df_graph_long$variable, "christmas_perc", 'Episodes with "Christmas" in the Title')
+joined_df_graph_long$variable <- str_replace(joined_df_graph_long$variable, "holiday_perc", 'Episodes with "Holiday" in the Title')
+
+library(showtext)
+font_add_google("Special Elite", family = "special")
+showtext_auto()
+
+ggplot(joined_df_graph_long, aes(x = decade, y = value, fill = genres)) + 
+  geom_bar(position = "stack", stat = "identity") +
+  facet_wrap(~variable) +
+  coord_flip() +
+  labs(title = "Holidays: AS SEEN ON TV", subtitle = 'Comedy by far is the most popular genre to have a Christmas/Holiday-themed episode. From the\n1990s onwards, there was an increase in the share of TV shows geared towards families that used\nthe word "Holiday" in episode titles.\n', caption = 'Share of TV episode titles containing variations of the words "Christmas" and "Holiday" by genre from the 1980s onwards\nSource: IMDb non-commercial datasets | github: julia-tache') +
+  scale_fill_manual(values = c("#87621E",
+                               "#F8B229",
+                               "#FFFFFF",
+                               "#235E6F",
+                               "#0F8A5F",
+                               "#34A65F",
+                               "#CC231E",
+                               "#F5624D")) +
+  scale_y_continuous(labels = scales::percent) +
+  theme(plot.background = element_rect(fill = "#faf3eb"),
+        panel.background = element_rect(fill = "#faf3eb"),
+        plot.title = element_text(face = "bold", size = 28, hjust = 0.5),
+        plot.subtitle = element_text(face = "italic", size = 14, hjust = 0.5),
+        plot.caption = element_text(size = 10, hjust = 0.5),
+        strip.background = element_rect(fill = "#faf3eb"),
+        strip.text = element_text(size = 14),
+        axis.title = element_blank(),
+        axis.text = element_text(size = 12),
+        legend.background = element_rect(fill = "#faf3eb"),
+        legend.title = element_blank(),
+        legend.position = "bottom",
+        legend.text = element_text(size = 12),
+        text = element_text(family = "special"))
+
+ggsave("holiday_TV.jpeg", width = 30, height = 12, units = "cm", dpi = 300)
+```
+
