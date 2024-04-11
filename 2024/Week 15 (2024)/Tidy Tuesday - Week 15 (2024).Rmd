@@ -1,0 +1,155 @@
+---
+title: "Tidy Tuesday - Week 15 (2024)"
+output: html_document
+date: "2023-12-12"
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+```{r load packages}
+
+library(tidyverse)
+library(webr)
+library(reshape2)
+library(ggthemes)
+library(geojsonio)
+library(RColorBrewer)
+library(sp)
+library(broom)
+library(maptools)
+library(broom)
+library(rgeos)
+if (!require(gpclib)) install.packages("gpclib", type="source")
+
+```
+
+
+```{r load data}
+
+tuesdata <- tidytuesdayR::tt_load("2024-04-09")
+
+eclipse_annular_2023 <- tuesdata$eclipse_annular_2023
+eclipse_total_2024 <- tuesdata$eclipse_total_2024
+eclipse_partial_2023 <- tuesdata$eclipse_partial_2023
+eclipse_partial_2024 <- tuesdata$eclipse_partial_2024
+
+```
+
+```{r clean data}
+
+states_total <- eclipse_total_2024 %>%
+  select(state) %>%
+  group_by(state) %>%
+  tally() %>%
+  select(state)
+
+states_annular <- eclipse_annular_2023 %>%
+  select(state) %>%
+  group_by(state) %>%
+  tally() %>%
+  select(state)
+
+states_all <- eclipse_partial_2023 %>%
+  select(state) %>%
+  group_by(state) %>%
+  tally() %>%
+  select(state)
+
+states_total <- cbind(states_total, n = rep(1, 14))
+states_annular <- cbind(states_annular, n = rep(1, 8))
+states_all <- cbind(states_all, n = rep(0, 52))
+
+states_eclipse <- unique(rbind(states_total, states_annular, states_all)) %>%
+  filter(state != "TX")
+
+states_no_view <- rbind(states_eclipse, data.frame(state = c("TX"), n = 2), states_all) %>%
+  group_by(state) %>%
+  summarize(saw_eclipse = sum(n))
+
+states_no_view <- states_no_view %>%
+  filter(saw_eclipse == 0) %>%
+  mutate(saw_eclipse = as.character(saw_eclipse)) %>%
+  mutate(saw_eclipse = case_when(saw_eclipse == "0" ~ "None"))
+
+states_total <- eclipse_total_2024 %>%
+  select(state) %>%
+  group_by(state) %>%
+  tally() %>%
+  select(state)
+
+states_total$saw_eclipse <- rep("2024", 14)
+
+states_annular <- eclipse_annular_2023 %>%
+  select(state) %>%
+  group_by(state) %>%
+  tally() %>%
+  select(state)
+
+states_annular$saw_eclipse <- rep("2023", 8)
+
+no_tex <- rbind(states_annular, states_total, states_no_view) %>%
+  filter(state != "TX")
+
+map_df <- rbind(no_tex, data.frame(state = "TX", saw_eclipse = "Both"))
+
+map_df$state_name <- state.name[match(map_df$state, state.abb)]
+
+map_df <- map_df %>%
+  mutate(state_name = replace_na(state_name, "District of Columbia")) %>%
+  filter(state != "PR")
+
+```
+
+
+```{r prepare data for mapping}
+
+# Code help from R Graph Gallery: https://r-graph-gallery.com/328-hexbin-map-of-the-usa.html
+
+# Download the Hexagones boundaries at geojson format here: https://team.carto.com/u/andrew/tables/andrew.us_states_hexgrid/public/map.
+
+spdf <- geojson_read("us_states_hexgrid.geojson",  what = "sp")
+
+spdf@data = spdf@data %>%
+  mutate(google_name = gsub(" \\(United States\\)", "", google_name))
+
+spdf_fortified <- tidy(spdf, region = "google_name")
+centers <- cbind.data.frame(data.frame(gCentroid(spdf, byid = TRUE), id=spdf@data$iso3166_2))
+
+spdf_fortified <- left_join(spdf_fortified, map_df, by = c("id" = "state_name"))
+
+spdf_fortified$saw_eclipse <- as.character(spdf_fortified$saw_eclipse)
+
+```
+
+
+```{r hexabin map}
+
+my_palette <- c("#DAA520", "#7c919a", "#b7410e", "light gray")
+
+ggplot() +
+  geom_polygon(data = spdf_fortified, aes(fill = saw_eclipse, x = long, y = lat, group = group) , size = 0, alpha = 0.9) +
+  geom_text(data = centers, aes(x = x, y = y, label = id), color = "#22211d",size = 3, alpha = 0.6) +
+  theme_void() +
+  scale_fill_manual(values = my_palette,
+                    guide = guide_legend(keyheight = unit(3, units = "mm"),
+                                         keywidth=unit(12, units = "mm"),
+                                         label.position = "bottom",
+                                         title.position = 'top', nrow = 1)) +
+  labs(title = "States in the path of annular (2023) and total (2024) solar eclipses",
+       caption = "Source: NASA's Scientific Visualization Studio | github: julia-tache | April 10th, 2024") +
+  theme(legend.position = c(0.5, 0.9),
+        legend.title = element_blank(),
+        text = element_text(color = "#22211d"),
+        plot.background = element_rect(fill = "#f5f5f2", color = NA),
+        panel.background = element_rect(fill = "#f5f5f2", color = NA),
+        legend.background = element_rect(fill = "#f5f5f2", color = NA),
+        plot.title = element_text(size = 15, hjust=0.5, color = "#4e4d47", margin = margin(b = -0.1, t = 0.4, l = 2, unit = "cm")),
+        plot.caption = element_text(color = "#22211d", margin = margin(b = 0.25, t = 0.3, r = 1, unit = "cm")))
+
+ggsave("eclipse.png", height = 5, width = 8)
+
+```
