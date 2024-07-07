@@ -1,0 +1,104 @@
+---
+title: "Tidy Tuesday - Week 28"
+author: "Julia Tache"
+date: '2023-07-11'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r load packages}
+
+library(tidyverse)
+library(tidytuesdayR)
+library(viridisLite)
+library(grid)
+library(ggplotify)
+library(ggpubr)
+
+```
+
+```{r load data}
+
+tuesdata <- tidytuesdayR::tt_load("2023-07-11")
+
+global_temps <- tuesdata$global_temps
+
+```
+
+
+```{r prepare data for mapping}
+
+global_temps_heatmap <- global_temps %>%
+  select(-`J-D`, -`D-N`, -DJF, -MAM, -JJA, -SON) %>%
+  filter(Year > 1949)
+
+global_temps_heatmap_transpose <- as.data.frame(t(global_temps_heatmap[,-1]))
+colnames(global_temps_heatmap_transpose) <- global_temps_heatmap$Year
+
+global_temps_heatmap_matrix <- as.matrix(global_temps_heatmap_transpose)
+
+global_temps_bargraph <- global_temps %>%
+  select(Year, `J-D`) %>%
+  filter(Year > 1949)
+
+```
+
+```{r heatmap}
+
+require(lattice)
+
+coul <- inferno(100)
+heatmap1 <- levelplot(global_temps_heatmap_matrix,
+          col.regions = coul,
+          xlab = list("Deviation in Temp\nby Month", cex = 0.75),
+          ylab = NULL,
+          labels = FALSE,
+          scales = list(x = list(rot = 90, cex = 0.4), y = list(draw = FALSE)))
+
+heatmap1 <- as.ggplot(heatmap1)
+
+```
+
+```{r bargraph}
+
+bargraph1 <- ggplot(global_temps_bargraph, aes(x = Year, y = `J-D`)) +
+  geom_segment(aes(xend = Year, yend = 0), color = "#741A6E") +
+  geom_point(size = 2, color = "#FCA636FF") +
+  geom_hline(yintercept = 0) +
+  geom_hline(yintercept = 1, linetype = 2, alpha = 0.3) +
+  coord_flip() +
+  ylim(-.25, 1.1) +
+  ggtitle("                    Estimated yearly global surface temperature anomalies from 1950-2023") +
+  labs(subtitle = 'The change in global surface temperature (combined land-, air-, and sea-surface temperatures) has been\nincreasing year to year since the 1980s.\n\nGlobal surface temperatures are compared to a baseline established by NASA: the average global\nsurface temperature over a 30-year period (between 1951-1980). In 2016 and 2020, the difference\nbetween the average temperature for those years and the baseline temp was over one degree Celsius.',
+       caption = "Source: NASA GISS Surface Temperature Analysis | github: julia-tache | July 11th, 2023") +
+  ylab("Difference in Temperature (in Celsius)") +
+  annotate("text",
+           label = 'Temperatures were 1\ndegree higher globally\ncompared to the\n"normal" baseline in both\n2016 and 2020',
+           x = 2004,
+           y = 1,
+           size = 2.25,
+           fontface = 4) +
+  theme_bw() +
+  theme(plot.background = element_rect(fill = "#FDFDA3", color = NA),
+        panel.background = element_rect(fill = "#FDFDA3", color = NA),
+        plot.title = element_text(size = 14, hjust = 0.5, face = "bold", color = "#741A6E"),
+        plot.subtitle = element_text(size = 8),
+        plot.caption = element_text(hjust = 0.5),
+        axis.title.x = element_text(face = "bold", color = "#741A6E"),
+        axis.title.y = element_blank())
+
+```
+
+```{r combine plots}
+
+ggarrange(bargraph1, heatmap1, nrow = 1, ncol = 2, widths = c(3, 1)) +
+  ggtitle("Hey") +
+  theme(plot.background = element_rect(fill = "#FDFDA3"))
+
+ggsave("FINAL_combined_plots.png")
+
+```
+
